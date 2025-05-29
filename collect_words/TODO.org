@@ -1,0 +1,8 @@
+write a python code to do below things.
+
+- A folder has many subfolders and text files. collect the words and their frequency in a file called "tamil_words.txt"
+- when the folder is updated with new files, updated the tamil_words.txt file with only the changes.
+- have a cache file recording the incoming filename and hash, so that avoid parsing that file next time.
+- sort the dictionary file with desending order 
+- show counter, progress, time
+ - add one more file "most_used_tamil_words.txt" with the same content of frequent_tamil_words.txt but with only words.

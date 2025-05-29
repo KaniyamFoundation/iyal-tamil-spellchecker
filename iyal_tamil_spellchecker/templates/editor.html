@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="UTF-8">
+  <title>இயல் தமிழ் எழுத்துப் பிழைத்திருத்தி</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+
+    #editor {
+      width: 98%;
+      min-height: 300px;
+      border: 1px solid #ccc;
+      padding: 15px;
+      background: #fff;
+      outline: none;
+    }
+
+    .misspelled {
+      text-decoration: red wavy underline;
+      color: red;
+      cursor: pointer;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 12px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<img src = "https://user-images.githubusercontent.com/15311390/46800911-bae1df00-cd76-11e8-8850-81b05a836314.png" width="10%"></img>
+  <h2>இயல் தமிழ் எழுத்துப் பிழைத்திருத்தி</h2>
+
+  <div id="editor" contenteditable="true">
+    <p><b>வணக்கம</b>, இங்கே <i></i> உங்கள் உரையை ஒட்டுக. பின் கீழே உள்ள பொத்தானை அழுத்துக. தவறான சொற்கள் சிவப்பு நிறத்தில் காட்டுவோம். அவற்றை வலது கிளிக் செய்து, பட்டியலில் இருந்து சரியான சொல்லை தெரிவு செய்க. </p>
+  </div>
+
+  <button onclick="walkAndSpellcheck()">திருத்துக</button>
+
+
+
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+  <br>
+
+  <b>குறிப்பு - </b>
+
+  <ul>
+    <li> இது சோதனை முயற்சி மட்டுமே. தொடர்ந்து மேம்படுத்தி வருகிறோம்.</li>
+    <li> இது ஒரு இலவச கட்டற்ற மென்பொருள். உரிமை - Apache License 2.0 . யாவரும் பகிரலாம். மாற்றங்கள் செய்யலாம். </li>
+    <li> மூல நிரல் - <a href="https://github.com/KaniyamFoundation/iyal-tamil-spellchecker">https://github.com/KaniyamFoundation/iyal-tamil-spellchecker</a> </li>
+  </ul>
+
+  <br/>
+
+  <b> நன்றி </b>
+  <ul>
+  <li> முத்து அண்ணாமலை, open-tamil, எழில் மொழி உருவாக்குனர் </li>
+  <li> கணியம் அறக்கட்டளை பங்களிப்பாளர்கள் </li>
+  <li> காஞ்சி லினக்ஸ் பயனர் குழு</li>
+  <li> சென்னை லினக்ஸ் பயனர் குழு</li>
+  <li> மலைக்கண்ணன், தமிழரசன், செல்வகுமார் - சாமா டெக்னாலஜீஸ்</li>
+  <li> அனைத்து கட்டற்ற அறிவு ஆர்வலர்கள் </li>
+  </ul>
+
+  
+  
+  <script>
+    function walkAndSpellcheck() {
+      const editor = document.getElementById('editor');
+      const textNodes = [];
+
+      function getTextNodes(node) {
+        if (node.nodeType === Node.TEXT_NODE) {
+          textNodes.push(node);
+        } else {
+          for (const child of node.childNodes) {
+            getTextNodes(child);
+          }
+        }
+      }
+
+      getTextNodes(editor);
+
+      const fullText = textNodes.map(n => n.nodeValue).join(" ");
+      
+      fetch("/spellcheck", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: fullText })
+      })
+      .then(res => res.json())
+      .then(results => {
+        const errorWords = new Set();
+        const suggestionMap = new Map();
+
+        results.forEach(r => {
+          if (!r.correct) {
+            errorWords.add(r.word);
+            suggestionMap.set(r.word, r.suggestions || []);
+          }
+        });
+
+        textNodes.forEach(node => {
+          const frag = document.createDocumentFragment();
+          const tokens = node.nodeValue.split(/(\s+)/); // preserve spaces
+
+          tokens.forEach(token => {
+            if (errorWords.has(token)) {
+              const span = document.createElement("span");
+              span.className = "misspelled";
+              span.textContent = token;
+              span.dataset.suggestions = JSON.stringify(suggestionMap.get(token));
+              frag.appendChild(span);
+            } else {
+              frag.appendChild(document.createTextNode(token));
+            }
+          });
+
+          node.parentNode.replaceChild(frag, node);
+        });
+      });
+    }
+
+
+
+      document.addEventListener("contextmenu", (e) => {
+  const target = e.target;
+  if (target.classList.contains("misspelled")) {
+    e.preventDefault();
+    const suggestions = JSON.parse(target.dataset.suggestions || "[]");
+
+    const menu = document.createElement("ul");
+    menu.style.position = "absolute";
+    menu.style.top = e.pageY + "px";
+    menu.style.left = e.pageX + "px";
+    menu.style.background = "#fff";
+    menu.style.border = "1px solid #ccc";
+    menu.style.padding = "5px";
+    menu.style.listStyle = "none";
+    menu.style.zIndex = 9999;
+    menu.style.minWidth = "160px";
+
+    if (suggestions.length === 0) {
+      const item = document.createElement("li");
+      item.textContent = "பரிந்துரை தரவு இல்லை";
+      item.style.padding = "4px 8px";
+      item.style.color = "#999";
+      menu.appendChild(item);
+    } else {
+      suggestions.forEach(s => {
+        const item = document.createElement("li");
+        item.textContent = s;
+        item.style.padding = "4px 8px";
+        item.style.cursor = "pointer";
+        item.addEventListener("click", () => {
+          target.outerHTML = s;
+          document.body.removeChild(menu);
+        });
+        menu.appendChild(item);
+      });
+    }
+
+    document.body.appendChild(menu);
+
+    const removeMenu = () => {
+      if (menu.parentNode) {
+        menu.parentNode.removeChild(menu);
+      }
+      document.removeEventListener("click", removeMenu);
+    };
+    document.addEventListener("click", removeMenu);
+  }
+});
+
+      
+  </script>
+</body>
+</html>

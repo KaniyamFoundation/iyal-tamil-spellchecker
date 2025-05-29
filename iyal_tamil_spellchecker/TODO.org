@@ -1,0 +1,7 @@
+* TODO get the errored words in seperate file along with the selected word from suggestion
+* TODO have a frequently errored file with correction. search there too for suggestions.
+* TODO have a menu item to say the word is correct only
+* TODO have a word count limit to make sure the server is not crashing
+* TODO do performance testing
+* TODO add sandhi checking rules
+* TODO add an option to suggest tamil words for tanglish words.
