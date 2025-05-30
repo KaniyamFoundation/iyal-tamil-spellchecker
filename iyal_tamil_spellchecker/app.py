@@ -63,9 +63,19 @@ def log_event(subfolder, content):
         f.write(f"{content}\n")
 
 # ---------------------- Routes ----------------------
+
+
 @app.route("/")
 def index():
-    return render_template("editor.html")
+    version = "0.0.1"
+    try:
+        with open("version.txt", "r", encoding="utf-8") as f:
+            version = f.read().strip()
+    except:
+        pass
+    return render_template("editor.html", version=version)
+
+
 
 @app.route("/spellcheck", methods=["POST"])
 def spellcheck():

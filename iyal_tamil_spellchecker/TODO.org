@@ -1,11 +1,15 @@
-* TODO get the errored words in seperate file along with the selected word from suggestion
+* DONE get the errored words in seperate file along with the selected word from suggestion
+CLOSED: [2025-05-29 Thu 20:12]
+- State "DONE"       from "IN-PROGRESS" [2025-05-29 Thu 20:12]
+* DONE Add version number
+CLOSED: [2025-05-29 Thu 20:18]
+- State "DONE"       from "IN-PROGRESS" [2025-05-29 Thu 20:18]
 * TODO have a frequently errored file with correction. search there too for suggestions.
 * TODO have a menu item to say the word is correct only
 * TODO have a word count limit to make sure the server is not crashing
 * TODO do performance testing
 * TODO add sandhi checking rules
 * TODO add an option to suggest tamil words for tanglish words.
-* TODO Add version number
 * TODO check version online and notify for new version, for any self hosted installations
 * TODO easy upgrade online
 * TODO word macro
