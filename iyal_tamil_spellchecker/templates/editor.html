@@ -174,7 +174,21 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: fullText })
       })
-      .then(res => res.json())
+      //.then(res => res.json())
+
+.then(async (res) => {
+  const contentType = res.headers.get("content-type");
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Server error: ${res.status}\n${errorText}`);
+  }
+  if (!contentType || !contentType.includes("application/json")) {
+    const errorText = await res.text();
+    throw new Error(`Expected JSON but got:\n${errorText}`);
+  }
+  return res.json();
+})
+	
 	    .then(data => {
 
          const results = data.results;
@@ -206,9 +220,16 @@
             }
           });
 
+
+	    
           node.parentNode.replaceChild(frag, node);
         });
-      });
+    })
+
+.catch(err => {
+  console.error("Spellcheck error:", err);
+  alert("Spellcheck failed: " + err.message);
+});
     }
 
     // Show custom context menu
