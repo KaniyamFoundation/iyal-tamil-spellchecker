@@ -4,6 +4,9 @@ CLOSED: [2025-05-29 Thu 20:12]
 * DONE Add version number
 CLOSED: [2025-05-29 Thu 20:18]
 - State "DONE"       from "IN-PROGRESS" [2025-05-29 Thu 20:18]
+* DONE display words metrics - how many processed and how many fixed.
+CLOSED: [2025-05-29 Thu 22:59]
+- State "DONE"       from "IN-PROGRESS" [2025-05-29 Thu 22:59]
 * TODO have a frequently errored file with correction. search there too for suggestions.
 * TODO have a menu item to say the word is correct only
 * TODO have a word count limit to make sure the server is not crashing
@@ -16,4 +19,3 @@ CLOSED: [2025-05-29 Thu 20:18]
 * TODO public api
 * TODO google doc extension
 * TODO browser extension
-* TODO display words metrics - how many processed and how many fixed.
