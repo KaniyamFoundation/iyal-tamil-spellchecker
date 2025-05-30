@@ -5,3 +5,11 @@
 * TODO do performance testing
 * TODO add sandhi checking rules
 * TODO add an option to suggest tamil words for tanglish words.
+* TODO Add version number
+* TODO check version online and notify for new version, for any self hosted installations
+* TODO easy upgrade online
+* TODO word macro
+* TODO public api
+* TODO google doc extension
+* TODO browser extension
+* TODO display words metrics - how many processed and how many fixed.

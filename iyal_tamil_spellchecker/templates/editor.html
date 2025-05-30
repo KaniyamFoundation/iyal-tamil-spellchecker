@@ -3,15 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>இயல் தமிழ் எழுத்துப் பிழைத்திருத்தி</title>
-  <style>
+<style>
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
       font-family: sans-serif;
       padding: 20px;
       background: #f5f5f5;
+      position: relative;
     }
 
     #editor {
-      width: 98%;
+      width: 100%;
       min-height: 300px;
       border: 1px solid #ccc;
       padding: 15px;
@@ -29,6 +36,28 @@
       margin-top: 10px;
       padding: 8px 12px;
       font-size: 16px;
+    }
+
+    .context-menu {
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      z-index: 9999;
+      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+      max-width: 200px;
+    }
+
+    .context-menu li {
+      padding: 6px 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .context-menu li:hover {
+      background-color: #eee;
     }
   </style>
 </head>
@@ -79,9 +108,7 @@
 
 தொடர்புக்கு - த. சீனிவாசன் tshrinivasan@gmail.com
   
-
-  
-  <script>
+<script>
     function walkAndSpellcheck() {
       const editor = document.getElementById('editor');
       const textNodes = [];
@@ -99,7 +126,7 @@
       getTextNodes(editor);
 
       const fullText = textNodes.map(n => n.nodeValue).join(" ");
-      
+
       fetch("/spellcheck", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
@@ -138,58 +165,62 @@
       });
     }
 
+    // Show custom context menu
+    document.addEventListener("contextmenu", (e) => {
+      const target = e.target;
+      const existingMenu = document.querySelector(".context-menu");
+      if (existingMenu) existingMenu.remove();
 
+      if (target.classList.contains("misspelled")) {
+        e.preventDefault();
+        const originalWord = target.textContent;
+        const suggestions = JSON.parse(target.dataset.suggestions || "[]");
 
-      document.addEventListener("contextmenu", (e) => {
-  const target = e.target;
-  if (target.classList.contains("misspelled")) {
-    e.preventDefault();
-    const suggestions = JSON.parse(target.dataset.suggestions || "[]");
+        const menu = document.createElement("ul");
+        menu.className = "context-menu";
+        menu.style.top = `${e.clientY}px`;
+        menu.style.left = `${e.clientX}px`;
 
-    const menu = document.createElement("ul");
-    menu.style.position = "absolute";
-    menu.style.top = e.pageY + "px";
-    menu.style.left = e.pageX + "px";
-    menu.style.background = "#fff";
-    menu.style.border = "1px solid #ccc";
-    menu.style.padding = "5px";
-    menu.style.listStyle = "none";
-    menu.style.zIndex = 9999;
-    menu.style.minWidth = "160px";
+        if (suggestions.length === 0) {
+          const li = document.createElement("li");
+          li.textContent = "பரிந்துரை தரவு இல்லை";
+          li.style.color = "#999";
+          li.style.cursor = "default";
+          menu.appendChild(li);
+        } else {
+          suggestions.forEach(suggestion => {
+            const li = document.createElement("li");
+            li.textContent = suggestion;
+            li.onclick = () => {
+              target.outerHTML = suggestion;
+              fetch("/log_correction", {
+                method: "POST",
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  original: originalWord,
+                  selected: suggestion
+                })
+              });
+              menu.remove();
+            };
+            menu.appendChild(li);
+          });
+        }
 
-    if (suggestions.length === 0) {
-      const item = document.createElement("li");
-      item.textContent = "பரிந்துரை தரவு இல்லை";
-      item.style.padding = "4px 8px";
-      item.style.color = "#999";
-      menu.appendChild(item);
-    } else {
-      suggestions.forEach(s => {
-        const item = document.createElement("li");
-        item.textContent = s;
-        item.style.padding = "4px 8px";
-        item.style.cursor = "pointer";
-        item.addEventListener("click", () => {
-          target.outerHTML = s;
-          document.body.removeChild(menu);
-        });
-        menu.appendChild(item);
-      });
-    }
+        document.body.appendChild(menu);
 
-    document.body.appendChild(menu);
+        const removeMenu = () => {
+          if (menu && menu.parentNode) {
+            menu.remove();
+          }
+          document.removeEventListener("click", removeMenu);
+        };
 
-    const removeMenu = () => {
-      if (menu.parentNode) {
-        menu.parentNode.removeChild(menu);
+        setTimeout(() => {
+          document.addEventListener("click", removeMenu);
+        }, 0);
       }
-      document.removeEventListener("click", removeMenu);
-    };
-    document.addEventListener("click", removeMenu);
-  }
-});
-
-      
-  </script>
+    });
+</script>
 </body>
 </html>
