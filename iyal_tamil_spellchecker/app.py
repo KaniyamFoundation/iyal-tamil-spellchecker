@@ -9,8 +9,8 @@ import regex
 from bloom_filter2 import BloomFilter
 from pybktree import BKTree
 from Levenshtein import distance as levenshtein_distance
-
-
+from threading import Lock
+import json
 from datetime import datetime
 
 # ---------------------- Configuration ----------------------
@@ -38,6 +38,21 @@ app = Flask(__name__)
 #        f.write(f"[{content}\n")
 
 
+
+METRICS_FILE = os.path.join(BASE_DIR, "metrics.json")
+metrics_lock = Lock()
+
+def load_metrics():
+    if not os.path.exists(METRICS_FILE):
+        return {"total_words": 0, "corrections": 0, "no_suggestions": 0}
+    with open(METRICS_FILE, "r") as f:
+        return json.load(f)
+
+def save_metrics(metrics):
+    with open(METRICS_FILE, "w") as f:
+        json.dump(metrics, f)
+
+        
 # ---------------------- Spell Checker ----------------------
 def load_resources():
     with open(BLOOM_PATH, "rb") as f:
@@ -75,7 +90,8 @@ def index():
         pass
     return render_template("editor.html", version=version)
 
-
+# Initialize
+metrics_store = load_metrics()
 
 @app.route("/spellcheck", methods=["POST"])
 def spellcheck():
@@ -84,6 +100,8 @@ def spellcheck():
 
     seen = set()
     results = []
+    local_corrections = 0
+    local_no_suggestions = 0
     for word in words:
         if word in seen:
             continue
@@ -95,12 +113,30 @@ def spellcheck():
             if not suggestions:
 #                log_event("misses", f"Unknown word: {word}")
                 log_event(MISS_LOG_PATH, f"{word}")
+                local_no_suggestions += 1
+            local_corrections += 1
             results.append({
                 "word": word,
                 "correct": False,
                 "suggestions": suggestions
             })
-    return jsonify(results)
+
+   # Update persistent metrics
+    with metrics_lock:
+            # Update and save metrics
+        metrics_store["total_words"] += len(words)
+        metrics_store["corrections"] += local_corrections
+        metrics_store["no_suggestions"] += local_no_suggestions
+        save_metrics(metrics_store)
+    return jsonify({
+        "results": results,
+        "metrics": metrics_store
+    })        
+    
+
+@app.route("/metrics", methods=["GET"])
+def get_metrics():
+    return jsonify(metrics_store)
 
 @app.route("/log_correction", methods=["POST"])
 def log_correction():

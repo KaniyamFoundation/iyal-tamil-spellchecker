@@ -38,6 +38,18 @@
       font-size: 16px;
     }
 
+     #metrics {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #555;
+    }
+
+      #footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #888;
+    }
     .context-menu {
       position: absolute;
       background: white;
@@ -54,6 +66,13 @@
       padding: 6px 10px;
       cursor: pointer;
       font-size: 14px;
+    }
+
+     #footer {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 12px;
+      color: #888;
     }
 
     .context-menu li:hover {
@@ -109,12 +128,29 @@
 தொடர்புக்கு - த. சீனிவாசன் tshrinivasan@gmail.com
 
 
-<div style="text-align: center; margin-top: 40px; font-size: 14px; color: #888;">
-  பதிப்பு: {{ version }}
+
+<div id="metrics" style="text-align: center; margin-top: 30px; font-size: 14px; color: #333;">
+  <span id="totalWords">மொத்த சொற்கள்: 0</span> |
+  <span id="corrections">திருத்தங்கள்: 0</span> |
+  <span id="noSuggestions">பரிந்துரை இல்லை: 0</span> | 
+  <span id="version">பதிப்பு: {{ version }} </span>
+
 </div>
 
 
 <script>
+
+   window.onload = function () {
+    fetch("/metrics")
+      .then(res => res.json())
+      .then(metrics => {
+        document.getElementById("totalWords").textContent = `மொத்த சொற்கள்: ${metrics.total_words}`;
+        document.getElementById("corrections").textContent = `திருத்தங்கள்: ${metrics.corrections}`;
+        document.getElementById("noSuggestions").textContent = `பரிந்துரை இல்லை: ${metrics.no_suggestions}`;
+      });
+   };
+
+  
     function walkAndSpellcheck() {
       const editor = document.getElementById('editor');
       const textNodes = [];
@@ -139,7 +175,11 @@
         body: JSON.stringify({ text: fullText })
       })
       .then(res => res.json())
-      .then(results => {
+	    .then(data => {
+
+         const results = data.results;
+         const metrics = data.metrics;
+   
         const errorWords = new Set();
         const suggestionMap = new Map();
 
