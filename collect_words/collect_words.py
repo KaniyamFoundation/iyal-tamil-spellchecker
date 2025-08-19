@@ -6,14 +6,17 @@ import time
 from collections import Counter, defaultdict
 from multiprocessing import Pool, cpu_count
 from tqdm import tqdm
+import sys
 
 # Configuration
-ROOT_FOLDER = "/home/shrini/dev/llm-data"  #  Replace this with your actual root folder path
+ROOT_FOLDER = sys.argv[1].strip()
+extension = sys.argv[2].strip()
+#ROOT_FOLDER = "/home/shrini/dev/llm-data"  #  Replace this with your actual root folder path
 WORD_FREQ_FILE = "tamil_words.txt"
 FREQUENT_WORDS_FILE = "frequent_tamil_words.txt"
 MOST_USED_WORDS_FILE = "most_used_tamil_words.txt"
 CACHE_FILE = "file_cache.json"
-FREQUENT_THRESHOLD = 20
+FREQUENT_THRESHOLD = 50
 
 TAMIL_REGEX = re.compile(r"[\u0B80-\u0BFF]+")
 
@@ -99,13 +102,21 @@ def get_all_text_files(root_folder):
     all_files = []
     for dirpath, _, filenames in os.walk(root_folder):
         for filename in filenames:
-            if filename.lower().endswith(".txt"):
+            if filename.lower().endswith("." + extension):
                 full_path = os.path.join(dirpath, filename)
                 all_files.append(full_path)
     return all_files
 
 
+def show_stats():
+    os.system("wc -l  tamil_words.txt")
+    os.system("wc -l  frequent_tamil_words.txt")
+
+
+
 def main():
+    show_stats()
+
     start_time = time.time()
     hash_to_files = load_cache()
     word_freq = load_existing_word_freq()
@@ -155,6 +166,8 @@ def main():
     print(f"Files processed: {file_counter}/{total_files}")
     print(f"Time taken: {time.time() - start_time:.2f} seconds")
 
+
+    show_stats()
 
 if __name__ == "__main__":
     main()

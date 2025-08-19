@@ -12,6 +12,9 @@ from Levenshtein import distance as levenshtein_distance
 from threading import Lock
 import json
 from datetime import datetime
+from flask import Flask
+from flask_cors import CORS
+
 
 # ---------------------- Configuration ----------------------
 
@@ -32,6 +35,8 @@ os.makedirs(os.path.dirname(CORRECTION_LOG_PATH), exist_ok=True)
 
 # ---------------------- Flask Setup ----------------------
 app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "https://ta.wikisource.org"}})
+
 
 #def log_event(log_path, content):
 #    with open(log_path, "a", encoding="utf-8") as f:

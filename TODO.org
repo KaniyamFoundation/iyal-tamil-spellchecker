@@ -1,0 +1,9 @@
+* TODO download epub files
+* TODO download txt files from wikisource ebooks
+* TODO find the websites,blogs of good tamil writers
+* TODO find scrap websites,blogs of good tamil writers
+* TODO downlod epub files from https://www.yeanbooks.com
+* TODO extract unique words from above
+* TODO create a dictionary of spoken tamil to written tamil
+* TODO download all the location data in tamil from openstreetmap
+

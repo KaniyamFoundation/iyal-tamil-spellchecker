@@ -1,0 +1,12 @@
+* Building a open source tamil spellchecker
+
+** Existing open source tamil spellchekers
+
+There is a aspell based spellchecker by thamizha team. It works for the words with two levels of combination.
+As tamil is multi level combined language, we can build complex words, by combining many words.
+
+There are few desktop applications. they lack api, interoprability.
+
+** need of a modern spellcheker
+
+We need a fully open source, web based, API driven spellchecker. 

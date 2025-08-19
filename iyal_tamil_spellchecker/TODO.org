@@ -19,3 +19,4 @@ CLOSED: [2025-05-29 Thu 22:59]
 * TODO public api
 * TODO google doc extension
 * TODO browser extension
+* TODO Add unique identifiers for the pkl files

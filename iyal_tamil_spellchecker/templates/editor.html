@@ -18,7 +18,7 @@
     }
 
     #editor {
-      width: 100%;
+      width: 98%;
       min-height: 300px;
       border: 1px solid #ccc;
       padding: 15px;
@@ -144,7 +144,7 @@
     fetch("/metrics")
       .then(res => res.json())
       .then(metrics => {
-        document.getElementById("totalWords").textContent = `மொத்த சொற்கள்: ${metrics.total_words}`;
+        document.getElementById("totalWords").textContent = `இதுவரை கண்ட | மொத்த சொற்கள்: ${metrics.total_words}`;
         document.getElementById("corrections").textContent = `திருத்தங்கள்: ${metrics.corrections}`;
         document.getElementById("noSuggestions").textContent = `பரிந்துரை இல்லை: ${metrics.no_suggestions}`;
       });
