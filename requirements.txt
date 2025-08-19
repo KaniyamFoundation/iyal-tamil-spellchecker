@@ -5,3 +5,4 @@ pybktree
 Levenshtein
 mmh3
 tqdm
+flask-cors
