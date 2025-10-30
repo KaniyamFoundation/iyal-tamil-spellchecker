@@ -26,5 +26,5 @@ $ flask --app app.py run
 
 5. இணய உலாவியில் இயல் பிழைதிருத்தியை திறக்கவும்
 ```bash
-$ localhost:8000/
+$ localhost:5000/
 ```
