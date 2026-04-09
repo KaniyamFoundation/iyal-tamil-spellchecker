@@ -245,8 +245,8 @@
 
         const menu = document.createElement("ul");
         menu.className = "context-menu";
-        menu.style.top = `${e.clientY}px`;
-        menu.style.left = `${e.clientX}px`;
+        menu.style.top = `${e.pageY}px`;
+        menu.style.left = `${e.pageX}px`;
 
         if (suggestions.length === 0) {
           const li = document.createElement("li");
