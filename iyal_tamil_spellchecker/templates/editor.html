@@ -32,6 +32,12 @@
       cursor: pointer;
     }
 
+    .grammar-error {
+      text-decoration: orange wavy underline;
+      color: orange;
+      cursor: pointer;
+    }
+
     button {
       margin-top: 10px;
       padding: 8px 12px;
@@ -153,6 +159,12 @@
   
     function walkAndSpellcheck() {
       const editor = document.getElementById('editor');
+      
+      // Unwrap any existing diagnostic spans from previous checks
+      editor.querySelectorAll('.misspelled, .grammar-error').forEach(span => {
+          span.outerHTML = span.textContent;
+      });
+
       const textNodes = [];
 
       function getTextNodes(node) {
@@ -189,39 +201,55 @@
   return res.json();
 })
 	
-	    .then(data => {
+        .then(data => {
+        const results = data.results || [];
+        const grammarErrors = data.grammar_errors || [];
 
-         const results = data.results;
-         const metrics = data.metrics;
-   
-        const errorWords = new Set();
-        const suggestionMap = new Map();
-
+        const replacers = [];
         results.forEach(r => {
           if (!r.correct) {
-            errorWords.add(r.word);
-            suggestionMap.set(r.word, r.suggestions || []);
+            replacers.push({ word: r.word, suggestions: r.suggestions || [], type: 'spell' });
           }
         });
+        grammarErrors.forEach(g => {
+            replacers.push({ word: g.word, suggestions: g.suggestions || [], type: 'grammar', message: g.message, shortMessage: g.shortMessage });
+        });
+
+        if (replacers.length === 0) {
+           return;
+        }
+
+        // Sort by length so longer phrases are matched first
+        replacers.sort((a, b) => b.word.length - a.word.length);
+
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        const terms = replacers.map(r => escapeRegExp(r.word));
+        // Using lookaround to simulate word boundaries for Tamil + punctuation
+        const regex = new RegExp("(?<=^|\\s|[.,!?;:\\\"'\\()\\[\\]])(" + terms.join("|") + ")(?=$|\\s|[.,!?;:\\\"'\\()\\[\\]])", "g");
 
         textNodes.forEach(node => {
-          const frag = document.createDocumentFragment();
-          const tokens = node.nodeValue.split(/(\s+)/); // preserve spaces
+          const parts = node.nodeValue.split(regex);
+          if (parts.length <= 1) return;
 
-          tokens.forEach(token => {
-            if (errorWords.has(token)) {
+          const frag = document.createDocumentFragment();
+          parts.forEach(part => {
+            if (!part) return; // skip empty parts
+            const match = replacers.find(r => r.word === part);
+            if (match) {
               const span = document.createElement("span");
-              span.className = "misspelled";
-              span.textContent = token;
-              span.dataset.suggestions = JSON.stringify(suggestionMap.get(token));
+              span.className = match.type === 'grammar' ? "grammar-error" : "misspelled";
+              span.textContent = part;
+              span.dataset.suggestions = JSON.stringify(match.suggestions);
+              if (match.message) span.dataset.message = match.message;
+              if (match.shortMessage) span.dataset.shortMessage = match.shortMessage;
               frag.appendChild(span);
             } else {
-              frag.appendChild(document.createTextNode(token));
+              frag.appendChild(document.createTextNode(part));
             }
           });
 
-
-	    
           node.parentNode.replaceChild(frag, node);
         });
     })
@@ -238,15 +266,31 @@
       const existingMenu = document.querySelector(".context-menu");
       if (existingMenu) existingMenu.remove();
 
-      if (target.classList.contains("misspelled")) {
+      if (target.classList.contains("misspelled") || target.classList.contains("grammar-error")) {
         e.preventDefault();
         const originalWord = target.textContent;
         const suggestions = JSON.parse(target.dataset.suggestions || "[]");
+        const message = target.dataset.message;
+        const shortMessage = target.dataset.shortMessage;
 
         const menu = document.createElement("ul");
         menu.className = "context-menu";
         menu.style.top = `${e.pageY}px`;
         menu.style.left = `${e.pageX}px`;
+
+        if (shortMessage || message) {
+            const infoLi = document.createElement("li");
+            infoLi.style.cursor = "default";
+            infoLi.style.borderBottom = "1px solid #ccc";
+            infoLi.style.backgroundColor = "#f9f9f9";
+            infoLi.style.padding = "8px 10px";
+            
+            let html = "";
+            if (shortMessage) html += `<strong>${shortMessage}</strong><br/>`;
+            if (message) html += `<span style="font-size: 13px; color: #555;">${message}</span>`;
+            infoLi.innerHTML = html;
+            menu.appendChild(infoLi);
+        }
 
         if (suggestions.length === 0) {
           const li = document.createElement("li");

@@ -3,6 +3,8 @@ import re
 import sqlite3
 import pickle
 import hashlib
+import urllib.request
+import urllib.parse
 from datetime import datetime
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import regex
@@ -11,8 +13,6 @@ from pybktree import BKTree
 from Levenshtein import distance as levenshtein_distance
 from threading import Lock
 import json
-from datetime import datetime
-from flask import Flask
 from flask_cors import CORS
 
 
@@ -36,7 +36,6 @@ os.makedirs(os.path.dirname(CORRECTION_LOG_PATH), exist_ok=True)
 # ---------------------- Flask Setup ----------------------
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://ta.wikisource.org"}})
-
 
 #def log_event(log_path, content):
 #    with open(log_path, "a", encoding="utf-8") as f:
@@ -126,6 +125,26 @@ def spellcheck():
                 "suggestions": suggestions
             })
 
+    grammar_errors = []
+    try:
+        data = urllib.parse.urlencode({'language': 'ta', 'text': text}).encode('utf-8')
+        req = urllib.request.Request('http://localhost:8081/v2/check', data=data)
+        with urllib.request.urlopen(req, timeout=3) as res:
+            lt_response = json.loads(res.read().decode('utf-8'))
+            for match in lt_response.get("matches", []):
+                offset = match.get("offset")
+                length = match.get("length")
+                err_word = text[offset:offset+length]
+                replacements = [r["value"] for r in match.get("replacements", [])]
+                grammar_errors.append({
+                    "word": err_word,
+                    "suggestions": replacements,
+                    "message": match.get("message", ""),
+                    "shortMessage": match.get("shortMessage", "")
+                })
+    except Exception as e:
+        print("LanguageTool API error:", e)
+
    # Update persistent metrics
     with metrics_lock:
             # Update and save metrics
@@ -135,6 +154,7 @@ def spellcheck():
         save_metrics(metrics_store)
     return jsonify({
         "results": results,
+        "grammar_errors": grammar_errors,
         "metrics": metrics_store
     })        
     
@@ -160,5 +180,5 @@ def health():
     return "OK", 200
 
 if __name__ == "__main__":
-#    app.run(host='localhost', port=5001,debug=True)
+    #app.run(host='localhost', port=5001,debug=True)
     app.run(debug=True)

@@ -28,3 +28,39 @@ $ flask --app app.py run
 ```bash
 $ localhost:5000/
 ```
+
+## LanguageTool அமைப்பது எப்படி? (How to setup LanguageTool server)
+
+இயல் பிழைத்திருத்தி LanguageTool வழியாக இலக்கணப் பிழைகளைச் சுட்டிக்காட்ட, LanguageTool சேவையகம் பின்னணியில் இயங்க வேண்டும்.
+
+1. LanguageTool ஐ snap மூலம் நிறுவவும்:
+```bash
+sudo snap install languagetool
+```
+
+2. பயனர் systemd சேவையை உருவாக்கவும் (Create a systemd user service):
+```bash
+mkdir -p ~/.config/systemd/user
+cat << 'EOF' > ~/.config/systemd/user/languagetool.service
+[Unit]
+Description=LanguageTool Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/java -cp /snap/languagetool/current/usr/bin/languagetool-server.jar org.languagetool.server.HTTPServer --port 8081 --allow-origin '*'
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
+EOF
+```
+
+3. சேவையைத் துவக்கி செயல்படுத்துங்கள் (Enable and start the service):
+```bash
+systemctl --user daemon-reload
+systemctl --user enable --now languagetool.service
+```
+
+நீங்கள் `systemctl --user status languagetool.service` கட்டளை மூலம் சேவை சரியாக இயங்குகிறதா என பார்க்கலாம். LanguageTool 8081 என்ற போர்ட்டில் இயங்கும்.
