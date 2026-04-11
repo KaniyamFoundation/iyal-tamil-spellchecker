@@ -20,3 +20,6 @@ CLOSED: [2025-05-29 Thu 22:59]
 * TODO google doc extension
 * TODO browser extension
 * TODO Add unique identifiers for the pkl files
+* TODO handle long form content
+* TODO mobile friendly version 
+* TODO show "In progress" messages 

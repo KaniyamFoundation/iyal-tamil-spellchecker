@@ -14,6 +14,7 @@ from Levenshtein import distance as levenshtein_distance
 from threading import Lock
 import json
 from flask_cors import CORS
+import concurrent.futures
 
 
 # ---------------------- Configuration ----------------------
@@ -106,44 +107,51 @@ def spellcheck():
     results = []
     local_corrections = 0
     local_no_suggestions = 0
-    for word in words:
-        if word in seen:
-            continue
-        seen.add(word)
-        if word in bloom:
-            results.append({"word": word, "correct": True})
-        else:
-            suggestions = suggest_word(word)
-            if not suggestions:
-#                log_event("misses", f"Unknown word: {word}")
-                log_event(MISS_LOG_PATH, f"{word}")
-                local_no_suggestions += 1
-            local_corrections += 1
-            results.append({
-                "word": word,
-                "correct": False,
-                "suggestions": suggestions
-            })
+    def fetch_lt_grammar(text):
+        grammar_errors = []
+        try:
+            data = urllib.parse.urlencode({'language': 'ta', 'text': text}).encode('utf-8')
+            req = urllib.request.Request('http://localhost:8081/v2/check', data=data)
+            with urllib.request.urlopen(req, timeout=45) as res:
+                lt_response = json.loads(res.read().decode('utf-8'))
+                for match in lt_response.get("matches", []):
+                    offset = match.get("offset")
+                    length = match.get("length")
+                    err_word = text[offset:offset+length]
+                    replacements = [r["value"] for r in match.get("replacements", [])]
+                    grammar_errors.append({
+                        "word": err_word,
+                        "suggestions": replacements,
+                        "message": match.get("message", ""),
+                        "shortMessage": match.get("shortMessage", "")
+                    })
+        except Exception as e:
+            print("LanguageTool API error:", e)
+        return grammar_errors
 
-    grammar_errors = []
-    try:
-        data = urllib.parse.urlencode({'language': 'ta', 'text': text}).encode('utf-8')
-        req = urllib.request.Request('http://localhost:8081/v2/check', data=data)
-        with urllib.request.urlopen(req, timeout=3) as res:
-            lt_response = json.loads(res.read().decode('utf-8'))
-            for match in lt_response.get("matches", []):
-                offset = match.get("offset")
-                length = match.get("length")
-                err_word = text[offset:offset+length]
-                replacements = [r["value"] for r in match.get("replacements", [])]
-                grammar_errors.append({
-                    "word": err_word,
-                    "suggestions": replacements,
-                    "message": match.get("message", ""),
-                    "shortMessage": match.get("shortMessage", "")
+    # Start the grammar check concurrently while we process the BK Tree local spelling
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+        future_grammar = executor.submit(fetch_lt_grammar, text)
+
+        for word in words:
+            if word in seen:
+                continue
+            seen.add(word)
+            if word in bloom:
+                results.append({"word": word, "correct": True})
+            else:
+                suggestions = suggest_word(word)
+                if not suggestions:
+                    log_event(MISS_LOG_PATH, f"{word}")
+                    local_no_suggestions += 1
+                local_corrections += 1
+                results.append({
+                    "word": word,
+                    "correct": False,
+                    "suggestions": suggestions
                 })
-    except Exception as e:
-        print("LanguageTool API error:", e)
+
+        grammar_errors = future_grammar.result()
 
    # Update persistent metrics
     with metrics_lock:

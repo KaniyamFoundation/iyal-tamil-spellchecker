@@ -1,266 +1,1049 @@
 <!DOCTYPE html>
 <html lang="ta">
+
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>இயல் தமிழ் எழுத்துப் பிழைத்திருத்தி</title>
-<style>
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Mukta+Malar:wght@400;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f4f6f8;
+      --card-bg: #ffffff;
+      --text: #1a1a1a;
+      --text-muted: #64748b;
+      --border: rgba(226, 232, 240, 0.8);
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --header-text: #0b2b4d;
+      --hover-bg: #f1f5f9;
+      --menu-hover-text: #0f172a;
+      --primary-flat: #3b82f6;
+      --primary: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      --spell-color: #ef4444;
+      --spell-bg: rgba(239, 68, 68, 0.08);
+      --spell-bg-hover: rgba(239, 68, 68, 0.15);
+      --grammar-color: #f59e0b;
+      --grammar-bg: rgba(245, 158, 11, 0.1);
+      --grammar-bg-hover: rgba(245, 158, 11, 0.2);
+    }
+
+    body.dark-mode {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: rgba(51, 65, 85, 0.8);
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.4);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.5), 0 4px 6px -4px rgb(0 0 0 / 0.5);
+      --header-text: #f8fafc;
+      --hover-bg: #334155;
+      --menu-hover-text: #f8fafc;
+      --primary-flat: #60a5fa;
+      --primary: linear-gradient(135deg, #60a5fa, #a78bfa);
+      --spell-color: #f87171;
+      --spell-bg: rgba(248, 113, 113, 0.2);
+      --spell-bg-hover: rgba(248, 113, 113, 0.35);
+      --grammar-color: #fbbf24;
+      --grammar-bg: rgba(251, 191, 36, 0.2);
+      --grammar-bg-hover: rgba(251, 191, 36, 0.35);
     }
 
     body {
-      font-family: sans-serif;
-      padding: 20px;
-      background: #f5f5f5;
-      position: relative;
+      font-family: 'Inter', 'Mukta Malar', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .header {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 16px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: background 0.3s;
+    }
+
+    .header img {
+      height: 48px;
+    }
+
+    .header h2 {
+      margin: 0;
+      font-weight: 600;
+      font-size: 22px;
+      color: var(--header-text);
+      flex-grow: 1;
+    }
+
+    .theme-toggle {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 50%;
+      transition: background 0.2s;
+      color: var(--text);
+    }
+
+    .theme-toggle:hover {
+      background: var(--hover-bg);
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 0 20px;
+      flex: 1;
+      width: 100%;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding: 0 10px;
+    }
+
+    .toolbar button {
+      background: var(--card-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 2px 4px var(--shadow-sm);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toolbar button:hover {
+      background: var(--hover-bg);
+      border-color: var(--primary-flat);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
     }
 
     #editor {
-      width: 98%;
-      min-height: 300px;
-      border: 1px solid #ccc;
-      padding: 15px;
-      background: #fff;
+      background: var(--card-bg);
+      min-height: 400px;
+      border-radius: 12px;
+      padding: 30px;
+      font-size: 18px;
+      line-height: 1.8;
       outline: none;
+      box-shadow: 0 4px 16px var(--shadow-md);
+      border: 1px solid transparent;
+      transition: all 0.2s ease;
+      color: var(--text);
+    }
+
+    #editor:focus {
+      border-color: var(--primary);
+      box-shadow: 0 4px 20px rgba(59, 130, 246, 0.15);
     }
 
     .misspelled {
-      text-decoration: red wavy underline;
-      color: red;
+      text-decoration: underline dashed var(--spell-color) 2px;
+      text-underline-offset: 4px;
+      background: var(--spell-bg);
       cursor: pointer;
+      border-radius: 2px;
+      transition: background 0.2s;
+    }
+
+    .misspelled:hover {
+      background: var(--spell-bg-hover);
     }
 
     .grammar-error {
-      text-decoration: orange wavy underline;
-      color: orange;
+      text-decoration: underline dashed var(--grammar-color) 2px;
+      text-underline-offset: 4px;
+      background: var(--grammar-bg);
       cursor: pointer;
+      border-radius: 2px;
+      transition: background 0.2s;
     }
 
-    button {
-      margin-top: 10px;
-      padding: 8px 12px;
-      font-size: 16px;
+    .grammar-error:hover {
+      background: var(--grammar-bg-hover);
     }
 
-     #metrics {
-      margin-top: 20px;
+    .bottom-panel {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-top: 24px;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    #metrics {
+      display: flex;
+      gap: 12px;
+      padding: 12px 0;
       font-size: 14px;
-      color: #555;
+      color: var(--text-muted);
+      font-weight: 500;
     }
 
-      #footer {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 12px;
-      color: #888;
+    .metrics-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--card-bg);
+      padding: 6px 14px;
+      border-radius: 20px;
+      box-shadow: 0 2px 4px var(--shadow-sm);
+      border: 1px solid var(--border);
     }
+
+    .metrics-item strong {
+      color: var(--text);
+    }
+
+    .layout-wrapper {
+      display: grid;
+      grid-template-columns: 1fr minmax(0, 960px) 1fr;
+      gap: 40px;
+      align-items: start;
+      margin: 40px auto;
+      max-width: 1600px;
+      width: 100%;
+      box-sizing: border-box;
+      padding: 0 40px;
+    }
+
+    .main-content {
+      grid-column: 2;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #ignoreManager {
+      grid-column: 3;
+      width: 320px;
+      padding: 16px 20px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      box-sizing: border-box;
+      position: sticky;
+      top: 100px;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    #ignoreManager strong {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+
+    .ignore-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .ignore-pill {
+      background: var(--hover-bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 10px;
+      border-radius: 16px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ignore-pill span {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-weight: bold;
+    }
+
+    .ignore-pill span:hover {
+      color: #ef4444;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(-4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
     .context-menu {
       position: absolute;
-      background: white;
-      border: 1px solid #ccc;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
       list-style: none;
-      padding: 0;
+      padding: 6px 0;
       margin: 0;
       z-index: 9999;
-      box-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
-      max-width: 200px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      min-width: 180px;
+      max-width: 280px;
+      animation: fadeIn 0.15s ease-out;
     }
 
     .context-menu li {
-      padding: 6px 10px;
+      padding: 10px 16px;
       cursor: pointer;
-      font-size: 14px;
-    }
-
-     #footer {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 12px;
-      color: #888;
+      font-size: 15px;
+      color: var(--text);
+      transition: background 0.15s;
     }
 
     .context-menu li:hover {
-      background-color: #eee;
+      background-color: var(--hover-bg);
+      color: var(--menu-hover-text);
+    }
+
+    .context-menu .ignore-btn {
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .context-menu .ignore-btn:hover {
+      background-color: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    #status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 10px;
+      font-size: 14px;
+      color: var(--text-muted);
+      min-height: 20px;
+      transition: opacity 0.3s;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top: 2px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+
+    .footer {
+      background: #0f172a;
+      color: #94a3b8;
+      padding: 40px 20px;
+      text-align: center;
+      margin-top: auto;
+    }
+
+    .footer a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        flex-direction: column;
+        padding: 16px;
+        text-align: center;
+        gap: 8px;
+      }
+
+      .layout-wrapper {
+        display: flex;
+        flex-direction: column;
+        margin: 20px auto;
+        padding: 0 16px;
+        gap: 16px;
+      }
+
+      .toolbar {
+        flex-wrap: wrap;
+        justify-content: center;
+      }
+
+      #topStatus {
+        margin-left: 0 !important;
+        justify-content: center;
+        width: 100%;
+        margin-top: 8px;
+      }
+
+      #editor {
+        padding: 16px;
+        font-size: 16px;
+        min-height: 250px;
+      }
+
+      #ignoreManager {
+        width: 100%;
+        position: static;
+        box-sizing: border-box;
+      }
+
+      #status {
+        bottom: 16px;
+        right: 16px;
+        max-width: calc(100vw - 32px);
+      }
+
+      #metrics {
+        flex-direction: column;
+        gap: 10px;
+      }
     }
   </style>
 </head>
+
 <body>
 
-
-<div style="display: flex; align-items: center; width: 100%;">
-    <img src = "https://user-images.githubusercontent.com/15311390/46800911-bae1df00-cd76-11e8-8850-81b05a836314.png" width="10%"></img>
-  <div style="text-align: center; flex-grow: 1;"><h2>இயல் தமிழ் எழுத்துப் பிழைத்திருத்தி</h2></div>
-</div>
-
-
-  <div id="editor" contenteditable="true">
-    <p><b>வணக்கம</b>, இங்கே <i></i> உங்கள் உரையை ஒட்டுக. பின் கீழே உள்ள பொத்தானை அழுத்துக. தவறான சொற்கள் சிவப்பு நிறத்தில் காட்டுவோம். அவற்றை வலது கிளிக் செய்து, பட்டியலில் இருந்து சரியான சொல்லை தெரிவு செய்க. </p>
+  <div class="header">
+    <div style="flex: 1;"></div>
+    <div style="display: flex; align-items: center; justify-content: center; gap: 16px; flex: auto;">
+      <img src="https://user-images.githubusercontent.com/15311390/46800911-bae1df00-cd76-11e8-8850-81b05a836314.png"
+        alt="Logo">
+      <h2 style="margin: 0; flex-grow: 0;">இயல் தமிழ் எழுத்துப் பிழைத்திருத்தி</h2>
+    </div>
+    <div style="flex: 1; display: flex; justify-content: flex-end;">
+      <button class="theme-toggle" id="themeToggle" title="இருள் நிலை (Dark Mode)">🌙</button>
+    </div>
   </div>
 
-  <button onclick="walkAndSpellcheck()">திருத்துக</button>
+  <div class="layout-wrapper">
+    <div class="left-spacer"></div>
+    <div class="main-content">
+      <div class="toolbar">
+        <button onclick="copyRawText()">📋 நகலெடு (Copy)</button>
+        <button onclick="downloadRawText()">💾 தரவிறக்கு (Download)</button>
+        <button onclick="clearEditor()">🗑️ அழி (Clear)</button>
+        <div id="topStatus"
+          style="margin-left: auto; display: flex; align-items: center; gap: 8px; color: var(--primary); font-weight: 500; opacity: 0; transition: opacity 0.3s; font-size: 14px;">
+          <div class='spinner'></div> சரிபார்க்கிறது...
+        </div>
+      </div>
 
+      <div id="editor" contenteditable="true">
+        <p><b>வணக்கம்</b>, இங்கே உங்கள் உரையை ஒட்டுக. நீங்கள் தட்டச்சு செய்யும்போதே பின்னணியில் பிழைகளை கண்டறிந்து
+          திருத்துகிறோம். பிழைகள் தானாகவே கோடிட்டுக் காட்டப்படும். அவற்றை வலது கிளிக் செய்து சரியான சொல்லைப் பெறலாம்.
+        </p>
+      </div>
 
+      <div id="status"></div>
 
-  <br>
-  <br>
-  <br>
-  <br>
-  
+      <div id="metrics" style="margin-top: 15px; margin-right: auto; margin-left: 0;">
+        <div class="metrics-item">சொற்கள்: <strong id="totalWords">0</strong></div>
+        <div class="metrics-item">திருத்தங்கள்: <strong id="corrections">0</strong></div>
+        <div class="metrics-item">பரிந்துரை இல்லை: <strong id="noSuggestions">0</strong></div>
+      </div>
+    </div>
 
-  <b>குறிப்பு - </b>
+    <div id="ignoreManager">
+      <strong>புறக்கணிக்கப்பட்டவை (Ignored):</strong>
+      <div id="ignoreList" class="ignore-list"></div>
+    </div>
+  </div>
 
-  <ul>
-    <li> இது சோதனை முயற்சி மட்டுமே. தொடர்ந்து மேம்படுத்தி வருகிறோம்.</li>
-    <li> இது ஒரு இலவச கட்டற்ற மென்பொருள். உரிமை - Apache License 2.0 . யாவரும் பகிரலாம். மாற்றங்கள் செய்யலாம். </li>
-    <li> மூல நிரல் - <a href="https://github.com/KaniyamFoundation/iyal-tamil-spellchecker">https://github.com/KaniyamFoundation/iyal-tamil-spellchecker</a> </li>
-  </ul>
+  <footer class="footer">
+    <div class="container" style="margin: 0 auto; padding: 0; max-width: 800px; text-align: center;">
+      <div style="margin-bottom: 24px;">
+        <b style="color: var(--primary); font-size: 18px;">குறிப்பு -</b>
+        <p style="margin: 10px 0; line-height: 1.6; color: #cbd5e1;">இது சோதனை முயற்சி மட்டுமே. தொடர்ந்து மேம்படுத்தி
+          வருகிறோம்.<br>
+          இது ஒரு இலவச கட்டற்ற மென்பொருள். உரிமை - <b style="color: #f8fafc;">Apache License 2.0</b>. யாவரும் பகிரலாம்.
+          மாற்றங்கள் செய்யலாம்.</p>
+        <p>மூல நிரல் - <a href="https://github.com/KaniyamFoundation/iyal-tamil-spellchecker" target="_blank"
+            style="color: #38bdf8; text-decoration: underline;">https://github.com/KaniyamFoundation/iyal-tamil-spellchecker</a>
+        </p>
+      </div>
 
-  <br/>
+      <div style="margin-bottom: 24px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+        <b style="color: var(--primary); font-size: 18px;">நன்றி</b>
+        <p style="font-size: 14px; opacity: 0.9; line-height: 1.8; color: #94a3b8; margin-top: 10px;">
+          முத்து அண்ணாமலை, open-tamil, எழில் மொழி உருவாக்குனர்<br>
+          கணியம் அறக்கட்டளை பங்களிப்பாளர்கள்<br>
+          காஞ்சி லினக்ஸ் பயனர் குழு<br>
+          சென்னை லினக்ஸ் பயனர் குழு<br>
+          மலைக்கண்ணன், முனைவர் ப. தமிழ் அரசன், செல்வகுமார் - சாமா டெக்னாலஜீஸ்<br>
+          தமிழா குழு <br>
+          இளஞ்செழியன், பேராசிரியர் இளந்தமிழ் - மலேசியா<br>
+          அனைத்து கட்டற்ற அறிவு ஆர்வலர்கள்
+        </p>
+      </div>
 
-  <b> நன்றி </b>
-  <ul>
-  <li> முத்து அண்ணாமலை, open-tamil, எழில் மொழி உருவாக்குனர் </li>
-  <li> கணியம் அறக்கட்டளை பங்களிப்பாளர்கள் </li>
-  <li> காஞ்சி லினக்ஸ் பயனர் குழு</li>
-  <li> சென்னை லினக்ஸ் பயனர் குழு</li>
-  <li> மலைக்கண்ணன், தமிழரசன், செல்வகுமார் - சாமா டெக்னாலஜீஸ்</li>
-  <li> அனைத்து கட்டற்ற அறிவு ஆர்வலர்கள் </li>
-  </ul>
+      <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+        <p style="font-size: 14px; color: #94a3b8;"><b>தொடர்புக்கு -</b> த. சீனிவாசன் <a
+            href="mailto:tshrinivasan@gmail.com"
+            style="color: #38bdf8; text-decoration: none;">tshrinivasan@gmail.com</a></p>
+      </div>
+    </div>
+  </footer>
 
-<br/>
+  <script>
+    // --- Dark Mode Logic ---
+    const themeToggle = document.getElementById('themeToggle');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const savedTheme = localStorage.getItem('theme');
 
-தொடர்புக்கு - த. சீனிவாசன் tshrinivasan@gmail.com
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+      document.body.classList.add('dark-mode');
+      themeToggle.textContent = '☀️';
+    }
 
+    themeToggle.addEventListener('click', () => {
+      document.body.classList.toggle('dark-mode');
+      const isDark = document.body.classList.contains('dark-mode');
+      themeToggle.textContent = isDark ? '☀️' : '🌙';
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+    });
 
-
-<div id="metrics" style="text-align: center; margin-top: 30px; font-size: 14px; color: #333;">
-  <span id="totalWords">மொத்த சொற்கள்: 0</span> |
-  <span id="corrections">திருத்தங்கள்: 0</span> |
-  <span id="noSuggestions">பரிந்துரை இல்லை: 0</span> | 
-  <span id="version">பதிப்பு: {{ version }} </span>
-
-</div>
-
-
-<script>
-
-   window.onload = function () {
-    fetch("/metrics")
-      .then(res => res.json())
-      .then(metrics => {
-        document.getElementById("totalWords").textContent = `இதுவரை கண்ட | மொத்த சொற்கள்: ${metrics.total_words}`;
-        document.getElementById("corrections").textContent = `திருத்தங்கள்: ${metrics.corrections}`;
-        document.getElementById("noSuggestions").textContent = `பரிந்துரை இல்லை: ${metrics.no_suggestions}`;
+    // --- Toolbar Logic ---
+    function getRawEditorText() {
+      // Clone and strip spans safely to preserve breaks
+      const clone = document.getElementById('editor').cloneNode(true);
+      clone.querySelectorAll('.misspelled, .grammar-error').forEach(span => {
+        span.outerHTML = span.textContent;
       });
-   };
+      return clone.innerText;
+    }
 
-  
-    function walkAndSpellcheck() {
-      const editor = document.getElementById('editor');
-      
-      // Unwrap any existing diagnostic spans from previous checks
-      editor.querySelectorAll('.misspelled, .grammar-error').forEach(span => {
-          span.outerHTML = span.textContent;
+    function copyRawText() {
+      navigator.clipboard.writeText(getRawEditorText()).then(() => {
+        const btn = document.querySelector('.toolbar button:nth-child(1)');
+        btn.textContent = "✓ நகலெடுக்கப்பட்டது";
+        setTimeout(() => btn.textContent = "📋 நகலெடு (Copy)", 2000);
       });
+    }
 
-      const textNodes = [];
+    function downloadRawText() {
+      const text = getRawEditorText();
+      const blob = new Blob([text], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'iyal_document.txt';
+      a.click();
+    }
 
-      function getTextNodes(node) {
-        if (node.nodeType === Node.TEXT_NODE) {
-          textNodes.push(node);
-        } else {
-          for (const child of node.childNodes) {
-            getTextNodes(child);
+    function clearEditor() {
+      document.getElementById('editor').innerHTML = "<p><br></p>";
+      document.getElementById('editor').focus();
+      walkAndSpellcheck();
+    }
+
+    // --- UI State & Ignore Logic ---
+    const ignoredWords = new Set();
+    let currentCheckId = 0;
+    let debounceTimer;
+
+    const checkingQueue = [];
+    let isChecking = false;
+
+    function updateIgnoreUI() {
+      const manager = document.getElementById('ignoreManager');
+      const list = document.getElementById('ignoreList');
+      if (ignoredWords.size === 0) {
+        manager.style.visibility = "hidden";
+        manager.style.opacity = "0";
+        return;
+      }
+      manager.style.visibility = "visible";
+      manager.style.opacity = "1";
+      list.innerHTML = "";
+      ignoredWords.forEach(word => {
+        const pill = document.createElement("span");
+        pill.className = "ignore-pill";
+        pill.innerHTML = `${word} <span onclick="unignoreWord('${word}')">✖</span>`;
+        list.appendChild(pill);
+      });
+    }
+
+    window.unignoreWord = function (word) {
+      ignoredWords.delete(word);
+      updateIgnoreUI();
+      walkAndSpellcheck();
+    };
+
+    // --- Caret manipulation ---
+    function saveCaretPosition(context) {
+      let selection = window.getSelection();
+      let caretOffset = 0;
+      if (selection.rangeCount > 0) {
+        let range = selection.getRangeAt(0);
+        let preCaretRange = range.cloneRange();
+        preCaretRange.selectNodeContents(context);
+        preCaretRange.setEnd(range.endContainer, range.endOffset);
+        caretOffset = preCaretRange.toString().length;
+      }
+      return caretOffset;
+    }
+
+    function restoreCaretPosition(context, caretOffset) {
+      if (caretOffset > 0) {
+        let selection = window.getSelection();
+        let range = document.createRange();
+        let treeWalker = document.createTreeWalker(context, NodeFilter.SHOW_TEXT, null, false);
+
+        let currentNode = treeWalker.nextNode();
+        let currentOffset = 0;
+        let found = false;
+
+        while (currentNode) {
+          let nodeLength = currentNode.length;
+          if (currentOffset + nodeLength >= caretOffset) {
+            range.setStart(currentNode, caretOffset - currentOffset);
+            range.setEnd(currentNode, caretOffset - currentOffset);
+            found = true;
+            break;
           }
+          currentOffset += nodeLength;
+          currentNode = treeWalker.nextNode();
+        }
+
+        if (found) {
+          selection.removeAllRanges();
+          selection.addRange(range);
+        }
+      }
+    }
+
+    // --- Update Metrics ---
+    function fetchMetrics() {
+      fetch("/metrics").then(res => res.json()).then(metrics => {
+        document.getElementById("totalWords").textContent = metrics.total_words;
+        document.getElementById("corrections").textContent = metrics.corrections;
+        document.getElementById("noSuggestions").textContent = metrics.no_suggestions;
+      });
+    }
+
+    window.onload = fetchMetrics;
+
+    // --- Core Core Spellcheck (Delta Checking) ---
+    const cyrb53 = (str, seed = 0) => {
+      let h1 = 0xdeadbeef ^ seed, h2 = 0x41c6ce57 ^ seed;
+      for (let i = 0, ch; i < str.length; i++) {
+        ch = str.charCodeAt(i);
+        h1 = Math.imul(h1 ^ ch, 2654435761);
+        h2 = Math.imul(h2 ^ ch, 1597334677);
+      }
+      h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507) ^ Math.imul(h2 ^ (h2 >>> 13), 3266489909);
+      h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
+      return 4294967296 * (2097151 & h2) + (h1 >>> 0);
+    };
+
+    function getRawText(node) {
+      if (!node) return "";
+      // Fallback to textContent which natively extracts all text ignoring span tags in O(1) C++
+      let text = node.textContent || "";
+      // Small cleanup in case the block uses BR tags
+      if (node.tagName === 'BR') return '\n';
+      return text;
+    }
+
+    let currentTraversalId = 0;
+
+    window.walkAndSpellcheck = async function () {
+      const traversalId = ++currentTraversalId;
+      const editor = document.getElementById('editor');
+
+      const topStatus = document.getElementById('topStatus');
+      topStatus.style.opacity = "1";
+      topStatus.innerHTML = `<div class='spinner'></div> ஆவணத்தை பகுப்பாய்வு செய்கிறது... (Analyzing)`;
+
+      let queuedAny = false;
+      const children = editor.childNodes; // Capture text nodes properly!
+
+      // We rely on the browser's native contenteditable parsing
+      for (let i = 0; i < children.length; i++) {
+        if (traversalId !== currentTraversalId) return;
+
+        const block = children[i];
+        const rawText = getRawText(block);
+
+        if (rawText.trim()) {
+          const hash = String(cyrb53(rawText));
+          if (block.dataset && block.dataset.hash === hash) continue;
+          if (block.nodeType === 1) block.dataset.hash = hash; // Stamp hash to elements
+
+          if (!checkingQueue.some(item => item.block === block)) {
+            checkingQueue.push({ block, rawText, hash });
+            queuedAny = true;
+          }
+        }
+
+        // Yield to browser event loop every 500 blocks to guarantee 60fps on huge pastes
+        if (i % 500 === 0) await new Promise(r => setTimeout(r, 0));
+      }
+
+      if (queuedAny && !isChecking) {
+        processQueue();
+      } else if (!queuedAny && !isChecking && checkingQueue.length === 0) {
+        const status = document.getElementById('status');
+        status.innerHTML = "✓ சரிபார்க்கப்பட்டது (All Checks Completed)";
+        topStatus.innerHTML = "✓ சரிபார்க்கப்பட்டது (Done)";
+      }
+    };
+
+    let queueSessionStartTime = 0;
+    let queueBlocksProcessed = 0;
+    let totalActiveBlocksCounter = 0;
+    let queueUpdateInterval = null;
+
+    const formatHHMMSS = (totalSec) => {
+      if (isNaN(totalSec) || !isFinite(totalSec)) return "...";
+      let s = Math.max(0, Math.ceil(totalSec));
+      let h = Math.floor(s / 3600);
+      let m = Math.floor((s % 3600) / 60);
+      s = s % 60;
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    };
+
+    function updateProgressUI() {
+      if (!isChecking) return;
+      const status = document.getElementById('status');
+      const topStatus = document.getElementById('topStatus');
+
+      const elapsedMs = Date.now() - queueSessionStartTime;
+      const elapsedFormatted = formatHHMMSS(elapsedMs / 1000);
+
+      let etaFormatted = "...";
+      if (queueBlocksProcessed > 0) {
+        const blocksRemaining = totalActiveBlocksCounter - queueBlocksProcessed;
+        if (blocksRemaining > 0) {
+          const msPerBlock = elapsedMs / queueBlocksProcessed;
+          const remainingSec = (msPerBlock * blocksRemaining) / 1000;
+          etaFormatted = formatHHMMSS(remainingSec);
+        } else {
+          etaFormatted = "00:00:00";
         }
       }
 
-      getTextNodes(editor);
+      const statusTextString = `சரிபார்க்கிறது... (${queueBlocksProcessed}/${totalActiveBlocksCounter}) | T: ${elapsedFormatted} | ETA: ${etaFormatted}`;
 
-      const fullText = textNodes.map(n => n.nodeValue).join(" ");
+      const safeUpdate = (elem) => {
+        let textSpan = elem.querySelector('.status-text');
+        if (!textSpan) {
+          elem.innerHTML = `<div class='spinner'></div> <span class='status-text'>${statusTextString}</span>`;
+        } else {
+          textSpan.textContent = statusTextString;
+        }
+      };
+
+      safeUpdate(status);
+      safeUpdate(topStatus);
+    }
+
+    function processQueue() {
+      const status = document.getElementById('status');
+      const topStatus = document.getElementById('topStatus');
+
+      if (checkingQueue.length === 0) {
+        isChecking = false;
+        queueSessionStartTime = 0;
+        queueBlocksProcessed = 0;
+        if (queueUpdateInterval) {
+          clearInterval(queueUpdateInterval);
+          queueUpdateInterval = null;
+        }
+        status.innerHTML = "✓ சரிபார்க்கப்பட்டது (All Checks Completed)";
+        topStatus.innerHTML = "✓ சரிபார்க்கப்பட்டது (Done)";
+        fetchMetrics();
+        return;
+      }
+
+      if (!isChecking) {
+        isChecking = true;
+        queueSessionStartTime = Date.now();
+        queueBlocksProcessed = 0;
+        if (!queueUpdateInterval) {
+          queueUpdateInterval = setInterval(updateProgressUI, 200);
+        }
+      }
+
+      // Batch up to 150 blocks into a single server request to eliminate sequential HTTP wait times.
+      const batch = [];
+      const MAX_BATCH_SIZE = 150;
+      while (checkingQueue.length > 0 && batch.length < MAX_BATCH_SIZE) {
+        batch.push(checkingQueue.shift());
+      }
+
+      totalActiveBlocksCounter = queueBlocksProcessed + checkingQueue.length + batch.length;
+
+      status.style.opacity = "1";
+      topStatus.style.opacity = "1";
+
+      updateProgressUI();
+
+      // Combine blocks securely for unified spelling run
+      const combinedText = batch.map(b => b.rawText).join('\n\n');
 
       fetch("/spellcheck", {
         method: "POST",
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: fullText })
+        body: JSON.stringify({ text: combinedText })
       })
-      //.then(res => res.json())
-
-.then(async (res) => {
-  const contentType = res.headers.get("content-type");
-  if (!res.ok) {
-    const errorText = await res.text();
-    throw new Error(`Server error: ${res.status}\n${errorText}`);
-  }
-  if (!contentType || !contentType.includes("application/json")) {
-    const errorText = await res.text();
-    throw new Error(`Expected JSON but got:\n${errorText}`);
-  }
-  return res.json();
-})
-	
+        .then(async (res) => {
+          if (!res.ok) throw new Error("Server Error");
+          return res.json();
+        })
         .then(data => {
-        const results = data.results || [];
-        const grammarErrors = data.grammar_errors || [];
-
-        const replacers = [];
-        results.forEach(r => {
-          if (!r.correct) {
-            replacers.push({ word: r.word, suggestions: r.suggestions || [], type: 'spell' });
-          }
+          // Distribute unified results selectively back to the exact DOM fragment chunks!
+          batch.forEach(({ block, rawText, hash }) => {
+            if (block && document.body.contains(block)) {
+              const currentText = getRawText(block);
+              if (String(cyrb53(currentText)) === hash) {
+                applySpellingToBlock(block, rawText, data);
+                block.dataset.hash = hash;
+              }
+            }
+          });
+          queueBlocksProcessed += batch.length;
+          processQueue();
+        })
+        .catch(err => {
+          console.error(err);
+          status.textContent = "பிழை ஏற்பட்டது (Error processing blocks)";
+          queueBlocksProcessed += batch.length;
+          processQueue();
         });
-        grammarErrors.forEach(g => {
-            replacers.push({ word: g.word, suggestions: g.suggestions || [], type: 'grammar', message: g.message, shortMessage: g.shortMessage });
-        });
+    }
 
-        if (replacers.length === 0) {
-           return;
+    function applySpellingToBlock(block, rawText, data) {
+      const editor = document.getElementById('editor');
+      const caret = saveCaretPosition(editor);
+
+      block.querySelectorAll('.misspelled, .grammar-error').forEach(span => {
+        span.outerHTML = span.textContent;
+      });
+
+      const textNodes = [];
+      function getTextNodes(node, arr) {
+        if (node.nodeType === Node.TEXT_NODE) arr.push(node);
+        else for (const child of node.childNodes) getTextNodes(child, arr);
+      }
+      getTextNodes(block, textNodes);
+
+      const results = data.results || [];
+      const grammarErrors = data.grammar_errors || [];
+      const replacersMap = new Map();
+      const multiWords = [];
+
+      results.forEach(r => {
+        if (!r.correct && !ignoredWords.has(r.word)) {
+          if (r.word.includes(' ')) multiWords.push({ word: r.word, suggestions: r.suggestions || [], type: 'spell' });
+          else replacersMap.set(r.word, { word: r.word, suggestions: r.suggestions || [], type: 'spell' });
         }
-
-        // Sort by length so longer phrases are matched first
-        replacers.sort((a, b) => b.word.length - a.word.length);
-
-        function escapeRegExp(string) {
-            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      });
+      grammarErrors.forEach(g => {
+        if (!ignoredWords.has(g.word)) {
+          if (g.word.includes(' ')) multiWords.push({ word: g.word, suggestions: g.suggestions || [], type: 'grammar', message: g.message, shortMessage: g.shortMessage });
+          else replacersMap.set(g.word, { word: g.word, suggestions: g.suggestions || [], type: 'grammar', message: g.message, shortMessage: g.shortMessage });
         }
-        const terms = replacers.map(r => escapeRegExp(r.word));
-        // Using lookaround to simulate word boundaries for Tamil + punctuation
-        const regex = new RegExp("(?<=^|\\s|[.,!?;:\\\"'\\()\\[\\]])(" + terms.join("|") + ")(?=$|\\s|[.,!?;:\\\"'\\()\\[\\]])", "g");
+      });
+
+      if (replacersMap.size > 0 || multiWords.length > 0) {
+        const termsLookup = Array.from(replacersMap.values()).concat(multiWords);
 
         textNodes.forEach(node => {
-          const parts = node.nodeValue.split(regex);
-          if (parts.length <= 1) return;
+          const text = node.nodeValue;
+          if (!text.trim()) return;
 
-          const frag = document.createDocumentFragment();
-          parts.forEach(part => {
-            if (!part) return; // skip empty parts
-            const match = replacers.find(r => r.word === part);
-            if (match) {
-              const span = document.createElement("span");
-              span.className = match.type === 'grammar' ? "grammar-error" : "misspelled";
-              span.textContent = part;
-              span.dataset.suggestions = JSON.stringify(match.suggestions);
-              if (match.message) span.dataset.message = match.message;
-              if (match.shortMessage) span.dataset.shortMessage = match.shortMessage;
-              frag.appendChild(span);
-            } else {
-              frag.appendChild(document.createTextNode(part));
+          // Ultra-fast memory-efficient native C++ indexing
+          let matches = [];
+          termsLookup.forEach(data => {
+            const word = data.word;
+            let index = text.indexOf(word);
+            while (index !== -1) {
+              const before = index === 0 || /[\s.,!?;:"'()[\]\n]/.test(text[index - 1]);
+              const after = (index + word.length === text.length) || /[\s.,!?;:"'()[\]\n]/.test(text[index + word.length]);
+              if (before && after) {
+                matches.push({ start: index, end: index + word.length, data: data });
+              }
+              index = text.indexOf(word, index + 1);
             }
           });
 
+          if (matches.length === 0) return;
+
+          matches.sort((a, b) => {
+            if (a.start === b.start) return b.end - a.end; // longest match wins!
+            return a.start - b.start;
+          });
+
+          const validMatches = [];
+          let lastEnd = -1;
+          for (const m of matches) {
+            if (m.start >= lastEnd) {
+              validMatches.push(m);
+              lastEnd = m.end;
+            }
+          }
+
+          const frag = document.createDocumentFragment();
+          let cursor = 0;
+          for (const m of validMatches) {
+            if (m.start > cursor) {
+              frag.appendChild(document.createTextNode(text.substring(cursor, m.start)));
+            }
+
+            const span = document.createElement("span");
+            const matchedData = m.data;
+            span.className = matchedData.type === 'grammar' ? "grammar-error" : "misspelled";
+            span.textContent = matchedData.word;
+            span.dataset.suggestions = JSON.stringify(matchedData.suggestions);
+            if (matchedData.message) span.dataset.message = matchedData.message;
+            if (matchedData.shortMessage) span.dataset.shortMessage = matchedData.shortMessage;
+            frag.appendChild(span);
+
+            cursor = m.end;
+          }
+          if (cursor < text.length) {
+            frag.appendChild(document.createTextNode(text.substring(cursor)));
+          }
+
           node.parentNode.replaceChild(frag, node);
         });
-    })
+      }
 
-.catch(err => {
-  console.error("Spellcheck error:", err);
-  alert("Spellcheck failed: " + err.message);
-});
+      restoreCaretPosition(editor, caret);
     }
 
-    // Show custom context menu
+    // Asynchronously stream massive text payload into DOM natively to prevent Chrome freezing
+    document.getElementById('editor').addEventListener('paste', function (e) {
+      e.preventDefault();
+      const text = (e.originalEvent || e).clipboardData.getData('text/plain');
+
+      const selection = window.getSelection();
+      if (!selection.rangeCount) return;
+
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+
+      const lines = text.split(/\r?\n/);
+      if (lines.length <= 100) {
+        // Fast-path for small pastes
+        const textNode = document.createTextNode(text);
+        range.insertNode(textNode);
+        range.collapse(false);
+        document.getElementById('editor').dispatchEvent(new Event('input', { bubbles: true }));
+        return;
+      }
+
+      const status = document.getElementById('status');
+      status.style.opacity = "1";
+
+      let currentLine = 0;
+      const batchSize = 1000;
+
+      function insertNextBatch() {
+        const frag = document.createDocumentFragment();
+        let lastInserted = null;
+
+        for (let i = 0; i < batchSize && currentLine < lines.length; i++) {
+          let div = document.createElement('div');
+          let lText = lines[currentLine];
+          div.textContent = lText;
+          if (!lText) div.innerHTML = "<br>";
+
+          // Skip native Chromium rendering overhead for offscreen blocks
+          div.style.contentVisibility = 'auto';
+          div.style.containIntrinsicSize = '0 24px';
+
+          frag.appendChild(div);
+          lastInserted = div;
+          currentLine++;
+        }
+
+        const editorEl = document.getElementById('editor');
+        if (window.lastPastedElement) {
+          // Ensures subsequent frames attach exactly to the end of the previous batch
+          window.lastPastedElement.after(frag);
+        } else {
+          // Find the closest direct child of editor to slide the massive chain behind
+          let targetNode = range.startContainer;
+          while (targetNode && targetNode.parentNode !== editorEl) {
+            targetNode = targetNode.parentNode;
+          }
+          if (targetNode && targetNode.parentNode === editorEl) {
+            targetNode.after(frag);
+          } else {
+            editorEl.appendChild(frag);
+          }
+        }
+        window.lastPastedElement = lastInserted;
+
+        if (currentLine < lines.length) {
+          const perc = Math.floor((currentLine / lines.length) * 100);
+          status.innerHTML = `<div class='spinner'></div> உரையை ஏற்றுகிறது... (${perc}%)`;
+          requestAnimationFrame(insertNextBatch);
+        } else {
+          window.lastPastedElement = null;
+          status.style.opacity = "0";
+          const evt = new Event('input', { bubbles: true });
+          editorEl.dispatchEvent(evt);
+        }
+      }
+
+      insertNextBatch();
+    });
+
+    document.getElementById('editor').addEventListener('input', () => {
+      const topStatus = document.getElementById('topStatus');
+      topStatus.style.opacity = "1";
+      topStatus.innerHTML = `<div class='spinner'></div> தட்டச்சு செய்கிறீர்கள்... (Typing...)`;
+
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => { walkAndSpellcheck(); }, 1200);
+    });
+
+    // --- Context Menu logic ---
     document.addEventListener("contextmenu", (e) => {
       const target = e.target;
       const existingMenu = document.querySelector(".context-menu");
@@ -279,23 +1062,22 @@
         menu.style.left = `${e.pageX}px`;
 
         if (shortMessage || message) {
-            const infoLi = document.createElement("li");
-            infoLi.style.cursor = "default";
-            infoLi.style.borderBottom = "1px solid #ccc";
-            infoLi.style.backgroundColor = "#f9f9f9";
-            infoLi.style.padding = "8px 10px";
-            
-            let html = "";
-            if (shortMessage) html += `<strong>${shortMessage}</strong><br/>`;
-            if (message) html += `<span style="font-size: 13px; color: #555;">${message}</span>`;
-            infoLi.innerHTML = html;
-            menu.appendChild(infoLi);
+          const infoLi = document.createElement("li");
+          infoLi.style.cursor = "default";
+          infoLi.style.borderBottom = `1px solid var(--border)`;
+          infoLi.style.backgroundColor = `var(--hover-bg)`;
+
+          let html = "";
+          if (shortMessage) html += `<strong style="color: var(--header-text); font-size: 14px;">${shortMessage}</strong><br/>`;
+          if (message) html += `<span style="font-size: 13px; color: var(--text-muted); line-height: 1.4; display: block; margin-top: 4px;">${message}</span>`;
+          infoLi.innerHTML = html;
+          menu.appendChild(infoLi);
         }
 
         if (suggestions.length === 0) {
           const li = document.createElement("li");
-          li.textContent = "பரிந்துரை தரவு இல்லை";
-          li.style.color = "#999";
+          li.textContent = "பரிந்துரை தரவு இல்லை (No suggestions)";
+          li.style.color = "var(--text-muted)";
           li.style.cursor = "default";
           menu.appendChild(li);
         } else {
@@ -318,20 +1100,32 @@
           });
         }
 
+        const ignoreLi = document.createElement("li");
+        ignoreLi.className = "ignore-btn";
+        ignoreLi.textContent = "புறக்கணி (Ignore)";
+        ignoreLi.onclick = () => {
+          ignoredWords.add(originalWord);
+          updateIgnoreUI();
+          document.querySelectorAll('.misspelled, .grammar-error').forEach(span => {
+            if (span.textContent === originalWord) span.outerHTML = span.textContent;
+          });
+          menu.remove();
+        };
+        menu.appendChild(ignoreLi);
+
         document.body.appendChild(menu);
 
         const removeMenu = () => {
-          if (menu && menu.parentNode) {
-            menu.remove();
-          }
+          if (menu && menu.parentNode) menu.remove();
           document.removeEventListener("click", removeMenu);
         };
-
-        setTimeout(() => {
-          document.addEventListener("click", removeMenu);
-        }, 0);
+        setTimeout(() => document.addEventListener("click", removeMenu), 0);
       }
     });
-</script>
+
+    setTimeout(() => walkAndSpellcheck(), 500);
+
+  </script>
 </body>
+
 </html>
