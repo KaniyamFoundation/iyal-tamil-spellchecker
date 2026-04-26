@@ -15,6 +15,7 @@ from threading import Lock
 import json
 from flask_cors import CORS
 import concurrent.futures
+from TamilinaiyaVanniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaaniSpellchecker
 
 
 # ---------------------- Configuration ----------------------
@@ -59,14 +60,56 @@ def save_metrics(metrics):
 
         
 # ---------------------- Spell Checker ----------------------
+TAMILINAIYA_VAANI_DB_PATH = os.path.join(BASE_DIR, "TamilinaiyaVanniSpellcheckerPy/data/DB.json")
+TAMILINAIYA_VAANI_USER_PATH = os.path.join(BASE_DIR, "TamilinaiyaVanniSpellcheckerPy/data/User.txt")
+USER_CONFIG_DIR = os.path.join(BASE_DIR, "TamilinaiyaVanniSpellcheckerPy/data/user_config")
+
 def load_resources():
     with open(BLOOM_PATH, "rb") as f:
         bloom = pickle.load(f)
     with open(BK_TREE_PATH, "rb") as f:
         bk_tree = pickle.load(f)
-    return bloom, bk_tree
+    
+    # Load TamilinaiyaVaani Data
+    tamilinaiya_vaani_data = TamilinaiyaVaaniData(TAMILINAIYA_VAANI_DB_PATH)
+    if not tamilinaiya_vaani_data.load():
+        print("Warning: TamilinaiyaVaani DB could not be loaded")
+        tamilinaiya_vaani_checker = None
+    else:
+        # We can still point to User.txt for the engine if needed, 
+        # but we'll manage the main overrides in app.py directly
+        tamilinaiya_vaani_data.load_user_data(TAMILINAIYA_VAANI_USER_PATH)
+        tamilinaiya_vaani_checker = TamilinaiyaVaaniSpellchecker(tamilinaiya_vaani_data)
+        
+    # Load User-defined overrides from dedicated config folder
+    custom_whitelist = set()
+    custom_blacklist = set()
+    custom_replacements = {}
+    
+    def read_config_file(filename):
+        path = os.path.join(USER_CONFIG_DIR, filename)
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                return [line.strip() for line in f if line.strip() and not line.startswith("#")]
+        return []
 
-bloom, bk_tree = load_resources()
+    # 1. Whitelist
+    for word in read_config_file("whitelist.txt"):
+        custom_whitelist.add(word)
+        
+    # 2. Blacklist
+    for word in read_config_file("blacklist.txt"):
+        custom_blacklist.add(word)
+        
+    # 3. Replacements
+    for line in read_config_file("replacements.txt"):
+        if "|" in line:
+            orig, sug = line.split("|", 1)
+            custom_replacements[orig.strip()] = sug.strip()
+        
+    return bloom, bk_tree, tamilinaiya_vaani_checker, custom_whitelist, custom_blacklist, custom_replacements
+
+bloom, bk_tree, tamilinaiya_vaani_checker, custom_whitelist, custom_blacklist, custom_replacements = load_resources()
 
 def suggest_word(word, max_suggestions=5):
     candidates = bk_tree.find(word, 2)
@@ -87,7 +130,7 @@ def log_event(subfolder, content):
 
 @app.route("/")
 def index():
-    version = "0.0.1"
+    version = "0.0.3"
     try:
         with open("version.txt", "r", encoding="utf-8") as f:
             version = f.read().strip()
@@ -110,6 +153,7 @@ def spellcheck():
     def fetch_lt_grammar(text):
         grammar_errors = []
         try:
+            #Check with local LanguageTool server
             data = urllib.parse.urlencode({'language': 'ta', 'text': text}).encode('utf-8')
             req = urllib.request.Request('http://localhost:8081/v2/check', data=data)
             with urllib.request.urlopen(req, timeout=45) as res:
@@ -133,17 +177,66 @@ def spellcheck():
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
         future_grammar = executor.submit(fetch_lt_grammar, text)
 
+        # Get suggestions from TamilinaiyaVaani if available
+        tamilinaiya_vaani_results_map = {}
+        if tamilinaiya_vaani_checker:
+            # tamilinaiya_vaani_checker.validate_words expects a list of words
+            # It returns a list of [count, suggestion_string]
+            tamilinaiya_vaani_parinthu = tamilinaiya_vaani_checker.validate_words(words)
+            tamilinaiya_vaani_results_map = {words[i]: tamilinaiya_vaani_parinthu[i] for i in range(len(words))}
+
         for word in words:
             if word in seen:
                 continue
             seen.add(word)
-            if word in bloom:
-                results.append({"word": word, "correct": True})
+            
+            is_correct = False
+            suggestions = []
+            
+            # 0. Check Custom Dictionary Overrides
+            if word in custom_blacklist:
+                is_correct = False
+            elif word in custom_whitelist:
+                is_correct = True
+            elif word in custom_replacements:
+                is_correct = False
+                suggestions = [custom_replacements[word]]
             else:
+                # 1. Check Bloom filter for speed
+                if word in bloom:
+                    is_correct = True
+                
+                # 2. If not in Bloom, consult TamilinaiyaVaani
+                if not is_correct and tamilinaiya_vaani_checker:
+                    v_res = tamilinaiya_vaani_results_map.get(word)
+                    if v_res:
+                        if v_res[1] == "correct":
+                            is_correct = True
+                        else:
+                            is_correct = False
+                            # TamilinaiyaVaani suggestions are comma separated
+                            if v_res[1] and v_res[1] != "wrong":
+                                suggestions = v_res[1].split(",")
+            
+            # Fallback to BK-tree if no suggestions from TamilinaiyaVaani and it's still wrong
+            if not is_correct and not suggestions:
                 suggestions = suggest_word(word)
                 if not suggestions:
                     log_event(MISS_LOG_PATH, f"{word}")
                     local_no_suggestions += 1
+            
+            # Clean up suggestions: remove the word itself and maintain uniqueness
+            if not is_correct and suggestions:
+                if word in suggestions:
+                    is_correct = True
+                    suggestions = []
+                else:
+                    # Remove word if it slipped in, and keep order
+                    suggestions = [s for s in suggestions if s != word]
+            
+            if is_correct:
+                results.append({"word": word, "correct": True})
+            else:
                 local_corrections += 1
                 results.append({
                     "word": word,

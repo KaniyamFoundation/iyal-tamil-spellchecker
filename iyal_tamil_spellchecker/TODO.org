@@ -11,7 +11,7 @@ CLOSED: [2025-05-29 Thu 22:59]
 * TODO have a menu item to say the word is correct only
 * TODO have a word count limit to make sure the server is not crashing
 * TODO do performance testing
-* TODO add sandhi checking rules
+* DONE add sandhi checking rules
 * TODO add an option to suggest tamil words for tanglish words.
 * TODO check version online and notify for new version, for any self hosted installations
 * TODO easy upgrade online
@@ -20,6 +20,6 @@ CLOSED: [2025-05-29 Thu 22:59]
 * TODO google doc extension
 * TODO browser extension
 * TODO Add unique identifiers for the pkl files
-* TODO handle long form content
-* TODO mobile friendly version 
-* TODO show "In progress" messages 
+* DONE handle long form content
+* DONE mobile friendly version 
+* DONE show "In progress" messages 

@@ -1,0 +1,7 @@
+# Always Wrong Fragments/Words (One per line)
+# These are checked with priority before rule-based engines
+முழுமையாக்கப்ப
+அதன
+அதா
+வந்த்
+சென்ற்
