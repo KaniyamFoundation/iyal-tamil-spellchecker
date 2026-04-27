@@ -83,32 +83,22 @@ class TamilinaiyaVaaniSpellchecker:
             return False
 
         if c == "ஆ":
-            if sv != "": return False
-            secondword = p[-1:] + v if p else v
-            sw = secondword
-            if len(sw) >= 2:
-                for d, val in self.yauyir.items():
-                    if sw[:2] == d:
-                        sw = sw.replace(d, val, 1)
-                        break
-                if sw.startswith("ய"):
-                    sw = "அ" + sw[1:]
-            if self.checkword(sw, 1):
-                return True
-            if sw != secondword:
+            if sv == "":
+                secondword = p[-1:] + v if p else v
                 if self.checkword(secondword, 1):
                     return True
-            return False
 
         if c == "இ":
-            if sv != "": return False
-            secondword = p[-1:] + v if p else v
-            return self.checkword(secondword, 1)
+            if sv == "":
+                secondword = p[-1:] + v if p else v
+                if self.checkword(secondword, 1):
+                    return True
 
         if c == "உ":
-            if sv != "": return False
-            secondword = self.codeuyir(v)
-            return self.checkword(secondword, 2)
+            if sv == "":
+                secondword = self.codeuyir(v)
+                if self.checkword(secondword, 2):
+                    return True
 
         if c == "ஊ":
             if sv != "": return False

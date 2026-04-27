@@ -162,6 +162,8 @@
       border: 1px solid transparent;
       transition: all 0.2s ease;
       color: var(--text);
+      white-space: pre-wrap;
+      word-wrap: break-word;
     }
 
     #editor:focus {
@@ -975,17 +977,8 @@
       range.deleteContents();
 
       const lines = text.split(/\r?\n/);
-      if (lines.length <= 100) {
-        // Fast-path for small pastes
-        const textNode = document.createTextNode(text);
-        range.insertNode(textNode);
-        range.collapse(false);
-        document.getElementById('editor').dispatchEvent(new Event('input', { bubbles: true }));
-        return;
-      }
-
       const status = document.getElementById('status');
-      status.style.opacity = "1";
+      if (lines.length > 100) status.style.opacity = "1";
 
       let currentLine = 0;
       const batchSize = 1000;
