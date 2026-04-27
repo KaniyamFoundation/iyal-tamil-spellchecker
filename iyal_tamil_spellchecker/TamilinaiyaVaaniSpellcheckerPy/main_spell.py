@@ -9,7 +9,7 @@ except ImportError:
     from spellchecker import TamilinaiyaVaaniSpellchecker
 
 def main():
-    parser = argparse.ArgumentParser(description="TamilinaiyaVaani Tamil Spellchecker")
+    parser = argparse.ArgumentParser(description="Vaani Tamil Spellchecker")
     parser.add_argument("text", nargs="?", help="Text to spellcheck")
     parser.add_argument("--db", default="data/DB.json", help="Path to DB.json")
     parser.add_argument("--file", help="Path to a text file to spellcheck")
@@ -40,7 +40,7 @@ def main():
         print("\nSpellcheck complete.")
     else:
         # Interactive mode
-        print("TamilinaiyaVaani Tamil Spellchecker (Python). Type 'exit' to quit.")
+        print("Vaani Tamil Spellchecker (Python). Type 'exit' to quit.")
         while True:
             try:
                 line = input("> ")

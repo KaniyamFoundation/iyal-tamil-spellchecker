@@ -15,7 +15,7 @@ from threading import Lock
 import json
 from flask_cors import CORS
 import concurrent.futures
-from TamilinaiyaVanniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaaniSpellchecker
+from TamilinaiyaVaaniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaaniSpellchecker
 
 
 # ---------------------- Configuration ----------------------
@@ -60,9 +60,9 @@ def save_metrics(metrics):
 
         
 # ---------------------- Spell Checker ----------------------
-TAMILINAIYA_VAANI_DB_PATH = os.path.join(BASE_DIR, "TamilinaiyaVanniSpellcheckerPy/data/DB.json")
-TAMILINAIYA_VAANI_USER_PATH = os.path.join(BASE_DIR, "TamilinaiyaVanniSpellcheckerPy/data/User.txt")
-USER_CONFIG_DIR = os.path.join(BASE_DIR, "TamilinaiyaVanniSpellcheckerPy/data/user_config")
+TAMILINAIYA_VAANI_DB_PATH = os.path.join(BASE_DIR, "TamilinaiyaVaaniSpellcheckerPy/data/DB.json")
+TAMILINAIYA_VAANI_USER_PATH = os.path.join(BASE_DIR, "TamilinaiyaVaaniSpellcheckerPy/data/User.txt")
+USER_CONFIG_DIR = os.path.join(BASE_DIR, "TamilinaiyaVaaniSpellcheckerPy/data/user_config")
 
 def load_resources():
     with open(BLOOM_PATH, "rb") as f:
@@ -70,7 +70,7 @@ def load_resources():
     with open(BK_TREE_PATH, "rb") as f:
         bk_tree = pickle.load(f)
     
-    # Load TamilinaiyaVaani Data
+    # Load Vaani Data
     tamilinaiya_vaani_data = TamilinaiyaVaaniData(TAMILINAIYA_VAANI_DB_PATH)
     if not tamilinaiya_vaani_data.load():
         print("Warning: TamilinaiyaVaani DB could not be loaded")
@@ -78,7 +78,7 @@ def load_resources():
     else:
         # We can still point to User.txt for the engine if needed, 
         # but we'll manage the main overrides in app.py directly
-        tamilinaiya_vaani_data.load_user_data(TAMILINAIYA_VAANI_USER_PATH)
+        # tamilinaiya_vaani_data.load_user_data(TAMILINAIYA_VAANI_USER_PATH)
         tamilinaiya_vaani_checker = TamilinaiyaVaaniSpellchecker(tamilinaiya_vaani_data)
         
     # Load User-defined overrides from dedicated config folder
@@ -94,11 +94,11 @@ def load_resources():
         return []
 
     # 1. Whitelist
-    for word in read_config_file("whitelist.txt"):
+    for word in read_config_file("rightwordlist.txt"):
         custom_whitelist.add(word)
         
     # 2. Blacklist
-    for word in read_config_file("blacklist.txt"):
+    for word in read_config_file("wrongwordlist.txt"):
         custom_blacklist.add(word)
         
     # 3. Replacements
@@ -144,10 +144,29 @@ metrics_store = load_metrics()
 @app.route("/spellcheck", methods=["POST"])
 def spellcheck():
     text = request.json.get("text", "")
+    
+    # 1. First, scan for Spacing Errors (Missing space after dot)
+    # Pattern: Long Tamil word + dot + Tamil word (e.g., பதிவாகியுள்ளன.இதுகுறித்து)
+    # We ignore short parts (1-2 chars) to allow initials like எஸ்.ஐ.ஆர்
+    results = []
+    spacing_matches = list(regex.finditer(r"(\p{Tamil}{3,})\.(\p{Tamil}+)", text))
+    for match in spacing_matches:
+        full_match = match.group(0)
+        pre = match.group(1)
+        post = match.group(2)
+        
+        results.append({
+            "word": full_match,
+            "correct": False,
+            "suggestions": [pre + ". " + post],
+            "type": "grammar",
+            "message": "முற்றுப்புள்ளிக்குப் பின் இடைவெளி தேவை (Missing space after period)"
+        })
+
+    # 2. Extract and check individual words
     words = regex.findall(r"\p{Tamil}+", text)
 
     seen = set()
-    results = []
     local_corrections = 0
     local_no_suggestions = 0
     def fetch_lt_grammar(text):
@@ -206,7 +225,7 @@ def spellcheck():
                 if word in bloom:
                     is_correct = True
                 
-                # 2. If not in Bloom, consult TamilinaiyaVaani
+                # 2. If not in Bloom, consult Vaani
                 if not is_correct and tamilinaiya_vaani_checker:
                     v_res = tamilinaiya_vaani_results_map.get(word)
                     if v_res:
@@ -214,11 +233,11 @@ def spellcheck():
                             is_correct = True
                         else:
                             is_correct = False
-                            # TamilinaiyaVaani suggestions are comma separated
+                            # Vaani suggestions are comma separated
                             if v_res[1] and v_res[1] != "wrong":
                                 suggestions = v_res[1].split(",")
             
-            # Fallback to BK-tree if no suggestions from TamilinaiyaVaani and it's still wrong
+            # Fallback to BK-tree if no suggestions from Vaani and it's still wrong
             if not is_correct and not suggestions:
                 suggestions = suggest_word(word)
                 if not suggestions:

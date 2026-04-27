@@ -5,10 +5,10 @@ import os
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)
 
-from TamilinaiyaVanniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaaniSpellchecker
+from TamilinaiyaVaaniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaaniSpellchecker
 
 def run_matrix():
-    db_path = os.path.join(ROOT_DIR, "TamilinaiyaVanniSpellcheckerPy/data/DB.json")
+    db_path = os.path.join(ROOT_DIR, "TamilinaiyaVaaniSpellcheckerPy/data/DB.json")
     data = TamilinaiyaVaaniData(db_path)
     if not data.load():
         print("Failed to load DB")

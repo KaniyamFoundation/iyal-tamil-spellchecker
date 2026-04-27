@@ -5,12 +5,12 @@ All notable changes to the Iyal Tamil Spellchecker project will be documented in
 ## [Unreleased]
 
 ### Added
-- Integrated Tamilinaiya Vanni (TamilinaiyaVaani) rule-based spellchecker engine for superior accuracy.
+- Integrated Tamilinaiya Vanni (Vaani) rule-based spellchecker engine for superior accuracy.
 - Added support for morphologically aware Tamil suggestions and sandhi/punarchi rules.
-- Implemented a hybrid spellchecking strategy combining Bloom filters and TamilinaiyaVaani.
+- Implemented a hybrid spellchecking strategy combining Bloom filters and Vaani.
 - **Unified Custom Configuration System**:
     - Created a folder-based configuration (`user_config/`) for scalable vocabulary management.
-    - Added support for multi-line **Whitelist** (always correct) and **Blacklist** (always wrong fragments).
+    - Added support for multi-line **Rightwordlist** (always correct) and **Wrongwordlist** (always wrong fragments).
     - Implemented **Preferred Replacements** mapping (e.g., "போட்டோ" -> "நிழற்படம்").
     - **Priority Precedence**: Custom replacements now take priority over the Bloom filter, allowing users to override common loan words.
 - **Vocabulary Expansion**: Added hundreds of common English loan words and their inflected forms to the default replacement list (Bus, Bank, Phone, etc.).

@@ -23,3 +23,9 @@ CLOSED: [2025-05-29 Thu 22:59]
 * DONE handle long form content
 * DONE mobile friendly version 
 * DONE show "In progress" messages 
+* TODO Have a message box to show update info
+* TODO protect from internet attacks
+* TODO Provide API docs 
+* TODO add rules from https://www.vaantamil.com/
+* TODO add grammer suggestions like - https://www.gotamil.in/
+* TODO add any verb rules from https://sudar-ilakkanam.blogspot.com/

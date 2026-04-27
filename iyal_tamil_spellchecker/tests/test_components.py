@@ -6,7 +6,7 @@ import sys
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(ROOT_DIR)
 
-from TamilinaiyaVanniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaaniSpellchecker
+from TamilinaiyaVaaniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaaniSpellchecker
 
 def test_bloom():
     print("Testing Bloom Filter...")
@@ -16,10 +16,10 @@ def test_bloom():
     word = "தானாகவே"
     print(f"  '{word}' in bloom: {word in bloom}")
 
-def test_vaani():
-    print("\nTesting TamilinaiyaVaani Engine...")
-    db_path = os.path.join(ROOT_DIR, "TamilinaiyaVanniSpellcheckerPy/data/DB.json")
-    user_path = os.path.join(ROOT_DIR, "TamilinaiyaVanniSpellcheckerPy/data/User.txt")
+def test_Vaani():
+    print("\nTesting Vaani Engine...")
+    db_path = os.path.join(ROOT_DIR, "TamilinaiyaVaaniSpellcheckerPy/data/DB.json")
+    user_path = os.path.join(ROOT_DIR, "TamilinaiyaVaaniSpellcheckerPy/data/User.txt")
     
     data = TamilinaiyaVaaniData(db_path)
     if data.load():
@@ -33,4 +33,4 @@ def test_vaani():
 
 if __name__ == "__main__":
     test_bloom()
-    test_vaani()
+    test_Vaani()

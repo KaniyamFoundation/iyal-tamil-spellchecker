@@ -12,7 +12,7 @@ def test_spellcheck():
     
     test_cases = [
         {"text": "தானாகவே", "expected_correct": True, "desc": "Common word in Bloom filter"},
-        {"text": "தமழ்", "expected_correct": False, "expected_suggestion": "தமிழ்", "desc": "TamilinaiyaVaani rule-based correction"},
+        {"text": "தமழ்", "expected_correct": False, "expected_suggestion": "தமிழ்", "desc": "Vaani rule-based correction"},
         {"text": "ஒட்டுக", "expected_correct": True, "desc": "Word found in BK-tree should be correct"},
         {"text": "தமிழ்", "expected_correct": True, "desc": "Basic correct word"}
     ]
