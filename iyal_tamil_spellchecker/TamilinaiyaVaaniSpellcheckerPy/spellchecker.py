@@ -159,6 +159,9 @@ class TamilinaiyaVaaniSpellchecker:
         return False
 
     def checkword(self, sol, type_code):
+        if sol in self.data.user_oword:
+            return True
+            
         sugges = 1 if type_code == 7 else 0
         for a in range(len(sol), 0, -1):
             paku = sol[:a]
@@ -295,7 +298,17 @@ class TamilinaiyaVaaniSpellchecker:
                                 self.add_parinthu(parinthu, i, nword[:-1] + sandi)
                         else:
                             self.add_parinthu(parinthu, i, nword + sandi)
+                            
+                    # Fuzzy word-splitting logic (handles joined words with typos)
+                    split_sugs = self.get_split_suggestions(nword)
+                    for sw in split_sugs:
+                        self.add_parinthu(parinthu, i, sw)
                 
+                # Word-splitting logic for joined words (missing space)
+                split_sugs = self.get_split_suggestions(word)
+                for sw in split_sugs:
+                    self.add_parinthu(parinthu, i, sw)
+
                 if parinthu[i][0] > 0:
                     ottran[i][0] = 1
 
@@ -375,6 +388,34 @@ class TamilinaiyaVaaniSpellchecker:
                 if len(sug) > 1000: return []
             if not temp_word: break
         return sug
+
+    def get_split_suggestions(self, word, max_splits=3):
+        suggestions = []
+        min_len = 3
+        if len(word) < min_len * 2:
+            return list(dict.fromkeys(suggestions))
+            
+        def recurse(remaining_word, parts, depth):
+            if depth == max_splits:
+                if len(remaining_word) >= min_len and self.checkword(remaining_word, 7):
+                    suggestions.append(" ".join(parts + [remaining_word]))
+                return
+                
+            # If the current remaining chunk itself is fully valid, we can terminate early
+            if len(remaining_word) >= min_len and self.checkword(remaining_word, 7):
+                if len(parts) > 0:
+                    suggestions.append(" ".join(parts + [remaining_word]))
+                    
+            # Keep splitting
+            for i in range(min_len, len(remaining_word) - min_len + 1):
+                p1 = remaining_word[:i]
+                if self.checkword(p1, 7):
+                    recurse(remaining_word[i:], parts + [p1], depth + 1)
+
+        recurse(word, [], 1)
+        
+        # Return unique suggestions (preserves order)
+        return list(dict.fromkeys(suggestions))
 
     def combination(self, word_list, sug_list):
         if not word_list: return sug_list
