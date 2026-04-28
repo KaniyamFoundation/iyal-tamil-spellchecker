@@ -8,14 +8,19 @@ import urllib.parse
 from datetime import datetime
 from pathlib import Path
 from dataclasses import dataclass, field
-from flask import Flask, render_template, request, jsonify, send_from_directory
+import json
+import time
 import regex
+from threading import Lock
+from flask import Flask, render_template, request, jsonify, send_from_directory, g
 from bloom_filter2 import BloomFilter
 from pybktree import BKTree
 from Levenshtein import distance as levenshtein_distance
-from threading import Lock
-import json
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_compress import Compress
+from flasgger import Swagger
 import concurrent.futures
 from TamilinaiyaVaaniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaaniSpellchecker
 
@@ -30,6 +35,13 @@ USER_CONFIG_DIR = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "user_c
 TAMILINAIYA_VAANI_DB_PATH = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "DB.json"
 BIGRAM_DB_PATH = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "bigrams_lite.db"
 METRICS_FILE = BASE_DIR / "metrics.json"
+
+# --- Rate Limit Constants ---
+LIMIT_DEFAULT = ["200 per day", "50 per hour"]
+LIMIT_SPELLCHECK = "20 per minute"
+LIMIT_LOG_CORRECTION = "5 per minute"
+WHITELISTED_IPS = ["127.0.0.1"]
+MAX_CHARACTER_LIMIT = 50000
 
 # Logging setup with Pathlib
 DATE_STR = datetime.now().strftime("%Y-%m-%d")
@@ -53,6 +65,42 @@ class SpellCheckerResources:
 # ---------------------- Flask Setup ----------------------
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://ta.wikisource.org"}})
+Compress(app)
+Swagger(app)
+
+# --- Rate Limiter Setup ---
+limiter = Limiter(
+    key_func=get_remote_address,
+    app=app,
+    default_limits=LIMIT_DEFAULT,
+    storage_uri="memory://",
+)
+
+# 2. Whitelist IPs so they are never blocked
+@limiter.request_filter
+def ip_whitelist():
+    return request.remote_addr in WHITELISTED_IPS
+
+# --- Performance Telemetry ---
+@app.before_request
+def start_timer():
+    g.start = time.time()
+
+@app.after_request
+def add_process_time_header(response):
+    if hasattr(g, 'start'):
+        diff = time.time() - g.start
+        response.headers["X-Process-Time"] = f"{int(diff * 1000)}ms"
+    return response
+
+# 1. Custom JSON Error Response for Rate Limits
+@app.errorhandler(429)
+def ratelimit_handler(e):
+    return jsonify({
+        "error": "மகிழ்வுறுத்தல்கள் அதிகம் (Too Many Requests)",
+        "message": f"தாமதத்திற்கு மன்னிக்கவும். மீண்டும் முயற்சிக்கவும். ({e.description})",
+        "retry_after": e.description
+    }), 429
 
 metrics_lock = Lock()
 
@@ -203,8 +251,57 @@ PRONOUN_AGREEMENT = {
 metrics_store = load_metrics()
 
 @app.route("/spellcheck", methods=["POST"])
+@app.route("/v1/spellcheck", methods=["POST"])
+@limiter.limit(LIMIT_SPELLCHECK)
 def spellcheck():
-    text = request.json.get("text", "")
+    """
+    Tamil Spellcheck API
+    ---
+    tags:
+      - Core API
+    parameters:
+      - in: body
+        name: body
+        schema:
+          id: SpellcheckRequest
+          required:
+            - text
+          properties:
+            text:
+              type: string
+              description: The Tamil text to check (or a list of strings for batch mode)
+              example: "அவன் வந்தாள்"
+    responses:
+      200:
+        description: List of words with correctness and suggestions
+    """
+    input_data = request.json.get("text", "")
+    
+    # Batch processing support
+    if isinstance(input_data, list):
+        batch_results = []
+        for item in input_data:
+            # For batches, we return the error dictionary directly without the HTTP code
+            res_item = process_single_text(str(item))
+            if isinstance(res_item, tuple):
+                batch_results.append(res_item[0]) # Just the error body
+            else:
+                batch_results.append(res_item)
+        return jsonify({"batch_results": batch_results})
+    
+    # Handle single request (can return 413 tuple)
+    result = process_single_text(str(input_data))
+    if isinstance(result, tuple):
+        return jsonify(result[0]), result[1]
+    return jsonify(result)
+
+def process_single_text(text):
+    # Safety Check: Character Limit (Enforced only for non-whitelisted API users)
+    if len(text) > MAX_CHARACTER_LIMIT and request.remote_addr not in WHITELISTED_IPS:
+        return {
+            "error": "உரை மிக நீளமானது (Text too long)",
+            "message": f"மன்னிக்கவும், ஒரு நேரத்தில் {MAX_CHARACTER_LIMIT} எழுத்துக்களை மட்டுமே சரிபார்க்க முடியும். சிறிய பகுதிகளாகப் பயன்படுத்தவும்."
+        }, 413
     
     # 1. First, scan for Spacing Errors (Missing space after dot)
     # Pattern: Long Tamil word + dot + Tamil word (e.g., பதிவாகியுள்ளன.இதுகுறித்து)
@@ -236,8 +333,8 @@ def spellcheck():
             #Check with local LanguageTool server
             data = urllib.parse.urlencode({'language': 'ta', 'text': text}).encode('utf-8')
             req = urllib.request.Request('http://localhost:8081/v2/check', data=data)
-            with urllib.request.urlopen(req, timeout=45) as res:
-                lt_response = json.loads(res.read().decode('utf-8'))
+            with urllib.request.urlopen(req, timeout=45) as res_lt:
+                lt_response = json.loads(res_lt.read().decode('utf-8'))
                 for match in lt_response.get("matches", []):
                     offset = match.get("offset")
                     length = match.get("length")
@@ -398,19 +495,23 @@ def spellcheck():
         metrics_store["corrections"] += local_corrections
         metrics_store["no_suggestions"] += local_no_suggestions
         save_metrics(metrics_store)
-    return jsonify({
+    return {
         "results": results,
         "grammar_errors": grammar_errors,
         "metrics": metrics_store
-    })        
-    
+    }
 
 @app.route("/metrics", methods=["GET"])
+@app.route("/v1/metrics", methods=["GET"])
 def get_metrics():
+    """Metrics API"""
     return jsonify(metrics_store)
 
 @app.route("/log_correction", methods=["POST"])
+@app.route("/v1/log_correction", methods=["POST"])
+@limiter.limit(LIMIT_LOG_CORRECTION)
 def log_correction():
+    """Log user correction"""
     data = request.get_json()
     original = data.get("original")
     selected = data.get("selected")

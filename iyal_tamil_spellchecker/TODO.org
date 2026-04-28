@@ -9,7 +9,8 @@ CLOSED: [2025-05-29 Thu 22:59]
 - State "DONE"       from "IN-PROGRESS" [2025-05-29 Thu 22:59]
 * TODO have a frequently errored file with correction. search there too for suggestions.
 * TODO have a menu item to say the word is correct only
-* TODO have a word count limit to make sure the server is not crashing
+* DONE have a word count limit to make sure the server is not crashing
+CLOSED: [2026-04-28 Tue 13:44]
 * TODO do performance testing
 * DONE add sandhi checking rules
 * TODO add an option to suggest tamil words for tanglish words.
@@ -24,7 +25,8 @@ CLOSED: [2025-05-29 Thu 22:59]
 * DONE mobile friendly version 
 * DONE show "In progress" messages 
 * TODO Have a message box to show update info
-* TODO protect from internet attacks
+* DONE protect from internet attacks
+CLOSED: [2026-04-28 Tue 13:38]
 * TODO Provide API docs 
 * TODO add rules from https://www.vaantamil.com/
 * TODO add grammer suggestions like - https://www.gotamil.in/
@@ -52,6 +54,7 @@ CLOSED: [2025-05-29 Thu 22:59]
 * TODO Dockerize Iyal engine and Java LanguageTool server using docker-compose
 
 * TODO Implement UI tooltips to explain specific error types (Sandhi vs. Colloquial)
-* TODO Add API Rate Limiting (Flask-Limiter) for public-facing deployments
+* DONE Add API Rate Limiting (Flask-Limiter) for public-facing deployments
+CLOSED: [2026-04-28 Tue 13:38]
 * TODO Build a "Modern Python" migration script to add type hinting throughout the engine
 * TODO Develop an automated "Iyal-Upgrade" CLI tool for self-hosted instances
