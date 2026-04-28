@@ -30,7 +30,6 @@ CLOSED: [2025-05-29 Thu 22:59]
 * TODO add grammer suggestions like - https://www.gotamil.in/
 * TODO add any verb rules from https://sudar-ilakkanam.blogspot.com/
 * DONE Implement LRU Caching for checkword() and validate_words() to optimize large documents
-* TODO Build Telemetry Mining script (build_insights.py) to ingest /log_correction data into pending_replacements.txt
 * DONE Implement Kutriyalugaram (குற்றியலுகரம்) native reverse-concatenation in the core morphology engine
 * TODO Build UI listener to intercept manual human text replacements for autonomous dictionary learning
 * TODO Write native XML regex rules directly into local LanguageTool grammar.xml for cross-word grammar warnings
@@ -40,7 +39,18 @@ CLOSED: [2025-05-29 Thu 22:59]
   - Prioritize idiomatic phrases in the suggestion dropdowns
   - Store Top 2,000,000 Bigrams in a lightweight SQLite index for O(1) context scoring (Ingested from 2.2GB corpus)
 * DONE Implement Rule-Based Pronominal Agreement Layer (Heuristic fallback)
+* TODO Build Telemetry Mining script (build_insights.py) to ingest /log_correction data into pending_replacements.txt
+  - Automatically identify frequently manually corrected words and suggest them as new rules.
+* TODO Implement Sandhi Junction Analysis (Migum/Miga Resolution)
+  - Use Bigram DB to compare pairs with/without junction letters (e.g., தமிழி் கல்வி vs தமிழ்க்கல்வி).
+* TODO Ingest Named Entity Lists (Places and People)
+  - Pre-load all TN Village/Town names from official census data to prevent false positives.
+* TODO Create Spoken-to-Formal Mapping Layer (Colloquial Fixer)
+  - Map common spoken forms (வர்றேன், போறேன்) to formal literary forms (வருகிறேன், போகிறேன்).
+* TODO Develop Trigram Context Intelligence (3-Word Support)
+  - Track Top 100k three-word patterns to catch errors split by adverbs (அவன் நேற்று வந்தான்).
 * TODO Dockerize Iyal engine and Java LanguageTool server using docker-compose
+
 * TODO Implement UI tooltips to explain specific error types (Sandhi vs. Colloquial)
 * TODO Add API Rate Limiting (Flask-Limiter) for public-facing deployments
 * TODO Build a "Modern Python" migration script to add type hinting throughout the engine

@@ -97,6 +97,7 @@ def load_resources() -> SpellCheckerResources:
         return []
 
     whitelist.update(read_config("rightwordlist.txt"))
+    whitelist.update(read_config("global_places.txt"))
     blacklist.update(read_config("wrongwordlist.txt"))
     
     for line in read_config("replacements.txt"):
