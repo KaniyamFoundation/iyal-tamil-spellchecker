@@ -29,3 +29,8 @@ CLOSED: [2025-05-29 Thu 22:59]
 * TODO add rules from https://www.vaantamil.com/
 * TODO add grammer suggestions like - https://www.gotamil.in/
 * TODO add any verb rules from https://sudar-ilakkanam.blogspot.com/
+* TODO Implement LRU Caching for checkword() and validate_words() to optimize large documents
+* TODO Build Telemetry Mining script (build_insights.py) to ingest /log_correction data into pending_replacements.txt
+* TODO Implement Kutriyalugaram (குற்றியலுகரம்) native reverse-concatenation in the core morphology engine
+* TODO Build UI listener to intercept manual human text replacements for autonomous dictionary learning
+* TODO Write native XML regex rules directly into local LanguageTool grammar.xml for cross-word grammar warnings

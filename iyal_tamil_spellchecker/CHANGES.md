@@ -6,6 +6,12 @@ All notable changes to the Iyal Tamil Spellchecker project will be documented in
 
 ### Added
 - **Deep Udampadumey Sandhi Engine (உடம்படுமெய்ப் புணர்ச்சி)**: Implemented mathematical reverse-concatenation inside the morphology core, allowing perfectly conjoined dynamic compounds (e.g., `செய்யவென்றே`) to validate as correct automatically without aggressively splitting into independent nouns.
+- **Kutriyalugaram Reverse-Validation (குற்றியலுகரம்)**: Added native support for vowel-dropping compounds (e.g., `படித்துணர்ந்தான்`). The engine now autonomously restores the missing 'u' and starting vowels at grammar junctions, enabling thousands of complex verb-compounds to pass without manual dictionary updates.
+- **LRU Algorithmic Caching**: Integrated `functools.lru_cache` on core morphological methods (`checkword`, `checkviku`). This dramatically accelerates large-document processing by memoizing complex Tamil grammatical derivative calculations.
+- **O(1) Suggestion Cache Optimization**: Replaced the legacy list-based $O(N)$ cache with a high-performance hash dictionary. This fixes a scalability bottleneck in large documents, providing near-instantaneous validation for repeated words.
+- **Pythonic Resource Architecture (Dataclasses)**: Refactored `app.py` to use Python `dataclasses` for centralized resource management. All engine components (Bloom, BK-Tree, Vaani, and Overrides) are now encapsulated in a single type-safe object.
+- **O(1) User-Word Search Index**: Converted the `rightwordlist.txt` lookup engine from a List to a **Set**. This replaces $O(N)$ linear scans with instant constant-time lookups, significantly improving speed for users with massive custom dictionaries.
+- **Pathlib Integration**: Migrated the entire backend from `os.path` strings to **`pathlib.Path`** objects, ensuring more robust and platform-independent directory handling for logs and configuration.
 - **Dynamic Vulgarity Firewall**: Abstracted the N-Way recursive word split blacklist into `user_config/vulgar_splits.txt`, loaded dynamically via `db_loader`. This fundamentally blocks computationally "legal" but socially inappropriate vocabulary from ever rendering in suggestions.
 - **Multi-Slot Suggestion Dropdowns**: Extended `replacements.txt` parser to natively parse comma-separated text into dropdown menus in real-time (e.g., `இருப்பேண்டா|இருப்பேன்,இருப்பேன்டா,இருக்கிறேன்`).
 - Integrated Tamilinaiya Vanni (Vaani) rule-based spellchecker engine for superior accuracy.

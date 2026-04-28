@@ -6,6 +6,8 @@ import hashlib
 import urllib.request
 import urllib.parse
 from datetime import datetime
+from pathlib import Path
+from dataclasses import dataclass, field
 from flask import Flask, render_template, request, jsonify, send_from_directory
 import regex
 from bloom_filter2 import BloomFilter
@@ -20,36 +22,40 @@ from TamilinaiyaVaaniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaan
 
 # ---------------------- Configuration ----------------------
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-BLOOM_PATH = os.path.join(BASE_DIR, "tamil_bloom.pkl")
-BK_TREE_PATH = os.path.join(BASE_DIR, "bk_tree.pkl")
-LOG_DIR = os.path.join(BASE_DIR, "logs")
+BASE_DIR = Path(__file__).resolve().parent
+BLOOM_PATH = BASE_DIR / "tamil_bloom.pkl"
+BK_TREE_PATH = BASE_DIR / "bk_tree.pkl"
+LOG_DIR = BASE_DIR / "logs"
+USER_CONFIG_DIR = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "user_config"
+TAMILINAIYA_VAANI_DB_PATH = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "DB.json"
+METRICS_FILE = BASE_DIR / "metrics.json"
 
-date_str = datetime.now().strftime("%Y-%m-%d")
-# Logging Setup
-LOG_DIR = os.path.join(BASE_DIR, "logs")
-SESSION_ID = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-MISS_LOG_PATH = os.path.join(LOG_DIR, "misses", f"{date_str}")
-CORRECTION_LOG_PATH = os.path.join(LOG_DIR, "corrections", f"{date_str}")
+# Logging setup with Pathlib
+DATE_STR = datetime.now().strftime("%Y-%m-%d")
+MISS_LOG_DIR = LOG_DIR / "misses" / DATE_STR
+CORRECTION_LOG_DIR = LOG_DIR / "corrections" / DATE_STR
+MISS_LOG_DIR.mkdir(parents=True, exist_ok=True)
+CORRECTION_LOG_DIR.mkdir(parents=True, exist_ok=True)
 
-os.makedirs(os.path.dirname(MISS_LOG_PATH), exist_ok=True)
-os.makedirs(os.path.dirname(CORRECTION_LOG_PATH), exist_ok=True)
+# ---------------------- Dataclasses ----------------------
+
+@dataclass
+class SpellCheckerResources:
+    bloom: BloomFilter
+    bk_tree: BKTree
+    vaani: TamilinaiyaVaaniSpellchecker
+    whitelist: set = field(default_factory=set)
+    blacklist: set = field(default_factory=set)
+    replacements: dict = field(default_factory=dict)
 
 # ---------------------- Flask Setup ----------------------
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "https://ta.wikisource.org"}})
 
-#def log_event(log_path, content):
-#    with open(log_path, "a", encoding="utf-8") as f:
-#        f.write(f"[{content}\n")
-
-
-
-METRICS_FILE = os.path.join(BASE_DIR, "metrics.json")
 metrics_lock = Lock()
 
 def load_metrics():
-    if not os.path.exists(METRICS_FILE):
+    if not METRICS_FILE.exists():
         return {"total_words": 0, "corrections": 0, "no_suggestions": 0}
     with open(METRICS_FILE, "r") as f:
         return json.load(f)
@@ -58,71 +64,67 @@ def save_metrics(metrics):
     with open(METRICS_FILE, "w") as f:
         json.dump(metrics, f)
 
-        
-# ---------------------- Spell Checker ----------------------
-TAMILINAIYA_VAANI_DB_PATH = os.path.join(BASE_DIR, "TamilinaiyaVaaniSpellcheckerPy/data/DB.json")
-TAMILINAIYA_VAANI_USER_PATH = os.path.join(BASE_DIR, "TamilinaiyaVaaniSpellcheckerPy/data/User.txt")
-USER_CONFIG_DIR = os.path.join(BASE_DIR, "TamilinaiyaVaaniSpellcheckerPy/data/user_config")
+# ---------------------- Resource Loader ----------------------
 
-def load_resources():
+def load_resources() -> SpellCheckerResources:
     with open(BLOOM_PATH, "rb") as f:
         bloom = pickle.load(f)
     with open(BK_TREE_PATH, "rb") as f:
         bk_tree = pickle.load(f)
     
     # Load Vaani Data
-    tamilinaiya_vaani_data = TamilinaiyaVaaniData(TAMILINAIYA_VAANI_DB_PATH)
-    if not tamilinaiya_vaani_data.load():
-        print("Warning: TamilinaiyaVaani DB could not be loaded")
-        tamilinaiya_vaani_checker = None
+    vaani_data = TamilinaiyaVaaniData(str(TAMILINAIYA_VAANI_DB_PATH))
+    vaani_checker = None
+    if vaani_data.load():
+        vaani_data.load_user_data(str(USER_CONFIG_DIR / "rightwordlist.txt"))
+        vaani_data.load_vulgar_words(str(USER_CONFIG_DIR / "vulgar_splits.txt"))
+        vaani_checker = TamilinaiyaVaaniSpellchecker(vaani_data)
     else:
-        # Inject rightwordlist directly into the deep engine
-        tamilinaiya_vaani_data.load_user_data(os.path.join(USER_CONFIG_DIR, "rightwordlist.txt"))
-        tamilinaiya_vaani_data.load_vulgar_words(os.path.join(USER_CONFIG_DIR, "vulgar_splits.txt"))
-        tamilinaiya_vaani_checker = TamilinaiyaVaaniSpellchecker(tamilinaiya_vaani_data)
-        
-    # Load User-defined overrides from dedicated config folder
-    custom_whitelist = set()
-    custom_blacklist = set()
-    custom_replacements = {}
+        print(f"Warning: Vaani DB could not be loaded from {TAMILINAIYA_VAANI_DB_PATH}")
+
+    # Load overrides
+    whitelist = set()
+    blacklist = set()
+    replacements = {}
     
-    def read_config_file(filename):
-        path = os.path.join(USER_CONFIG_DIR, filename)
-        if os.path.exists(path):
+    def read_config(filename):
+        path = USER_CONFIG_DIR / filename
+        if path.exists():
             with open(path, "r", encoding="utf-8") as f:
                 return [line.strip() for line in f if line.strip() and not line.startswith("#")]
         return []
 
-    # 1. Whitelist
-    for word in read_config_file("rightwordlist.txt"):
-        custom_whitelist.add(word)
-        
-    # 2. Blacklist
-    for word in read_config_file("wrongwordlist.txt"):
-        custom_blacklist.add(word)
-        
-    # 3. Replacements
-    for line in read_config_file("replacements.txt"):
+    whitelist.update(read_config("rightwordlist.txt"))
+    blacklist.update(read_config("wrongwordlist.txt"))
+    
+    for line in read_config("replacements.txt"):
         if "|" in line:
             orig, sug = line.split("|", 1)
-            # Support multiple comma-separated suggestions
-            custom_replacements[orig.strip()] = [s.strip() for s in sug.split(",")]
+            replacements[orig.strip()] = [s.strip() for s in sug.split(",")]
         
-    return bloom, bk_tree, tamilinaiya_vaani_checker, custom_whitelist, custom_blacklist, custom_replacements
+    return SpellCheckerResources(
+        bloom=bloom,
+        bk_tree=bk_tree,
+        vaani=vaani_checker,
+        whitelist=whitelist,
+        blacklist=blacklist,
+        replacements=replacements
+    )
 
-bloom, bk_tree, tamilinaiya_vaani_checker, custom_whitelist, custom_blacklist, custom_replacements = load_resources()
+res = load_resources()
 
 def suggest_word(word, max_suggestions=5):
-    candidates = bk_tree.find(word, 2)
+    candidates = res.bk_tree.find(word, 2)
     filtered = [(w, d) for d, w in candidates if abs(len(w) - len(word)) <= 2 and w[0] == word[0]]
     return [w for w, d in sorted(filtered, key=lambda x: x[1])[:max_suggestions]]
 
 def log_event(subfolder, content):
-    date_str = datetime.now().strftime("%Y-%m-%d")
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
-    folder = os.path.join(LOG_DIR, subfolder)
-    os.makedirs(folder, exist_ok=True)
-    filepath = os.path.join(folder, f"{timestamp}.log")
+    # Subfolder will be typically "misses" or "corrections"
+    # The architecture uses: logs / folder / DATE_STR / timestamp.log
+    folder = LOG_DIR / subfolder / DATE_STR
+    folder.mkdir(parents=True, exist_ok=True)
+    filepath = folder / f"{timestamp}.log"
     with open(filepath, "a", encoding="utf-8") as f:
         f.write(f"{content}\n")
 
@@ -198,12 +200,10 @@ def spellcheck():
         future_grammar = executor.submit(fetch_lt_grammar, text)
 
         # Get suggestions from TamilinaiyaVaani if available
-        tamilinaiya_vaani_results_map = {}
-        if tamilinaiya_vaani_checker:
-            # tamilinaiya_vaani_checker.validate_words expects a list of words
-            # It returns a list of [count, suggestion_string]
-            tamilinaiya_vaani_parinthu = tamilinaiya_vaani_checker.validate_words(words)
-            tamilinaiya_vaani_results_map = {words[i]: tamilinaiya_vaani_parinthu[i] for i in range(len(words))}
+        vaani_results_map = {}
+        if res.vaani:
+            vaani_parinthu = res.vaani.validate_words(words)
+            vaani_results_map = {words[i]: vaani_parinthu[i] for i in range(len(words))}
 
         for word in words:
             if word in seen:
@@ -214,21 +214,21 @@ def spellcheck():
             suggestions = []
             
             # 0. Check Custom Dictionary Overrides
-            if word in custom_blacklist:
+            if word in res.blacklist:
                 is_correct = False
-            elif word in custom_whitelist:
+            elif word in res.whitelist:
                 is_correct = True
-            elif word in custom_replacements:
+            elif word in res.replacements:
                 is_correct = False
-                suggestions = custom_replacements[word]
+                suggestions = res.replacements[word]
             else:
                 # 1. Check Bloom filter for speed
-                if word in bloom:
+                if word in res.bloom:
                     is_correct = True
                 
                 # 2. If not in Bloom, consult Vaani
-                if not is_correct and tamilinaiya_vaani_checker:
-                    v_res = tamilinaiya_vaani_results_map.get(word)
+                if not is_correct and res.vaani:
+                    v_res = vaani_results_map.get(word)
                     if v_res:
                         if v_res[1] == "correct":
                             is_correct = True
@@ -242,7 +242,7 @@ def spellcheck():
             if not is_correct and not suggestions:
                 suggestions = suggest_word(word)
                 if not suggestions:
-                    log_event(MISS_LOG_PATH, f"{word}")
+                    log_event("misses", f"{word}")
                     local_no_suggestions += 1
             
             # Clean up suggestions: remove the word itself and maintain uniqueness
@@ -289,7 +289,7 @@ def log_correction():
     data = request.get_json()
     original = data.get("original")
     selected = data.get("selected")
-    log_event(CORRECTION_LOG_PATH, f"{original} -> {selected}")
+    log_event("corrections", f"{original} -> {selected}")
     return jsonify({"status": "ok"})
 
 @app.route('/static/<path:path>')
@@ -301,5 +301,5 @@ def health():
     return "OK", 200
 
 if __name__ == "__main__":
-    #app.run(host='localhost', port=5001,debug=True)
-    app.run(debug=True)
+    app.run(host='localhost', port=5001,debug=True)
+    #app.run(debug=True)

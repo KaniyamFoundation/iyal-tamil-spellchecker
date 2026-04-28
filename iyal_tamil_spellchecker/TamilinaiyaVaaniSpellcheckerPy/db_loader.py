@@ -11,8 +11,8 @@ class TamilinaiyaVaaniData:
         self.tranrule = {}
         self.Eword = []
         self.Oword = {}
-        self.user_oword = []
-        self.user_gword = []
+        self.user_oword = set()
+        self.user_gword = set()
         self.vulgar_splits = set()
 
     def load(self):
@@ -44,8 +44,8 @@ class TamilinaiyaVaaniData:
         if not os.path.exists(user_txt_path):
             return
         with open(user_txt_path, 'r', encoding='utf-8') as f:
-            lines = [line.strip() for line in f.readlines() if line.strip() and not line.startswith('#')]
-            self.user_oword = lines
+            lines = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+            self.user_oword.update(lines)
 
     def load_vulgar_words(self, vulgar_txt_path):
         if not os.path.exists(vulgar_txt_path):

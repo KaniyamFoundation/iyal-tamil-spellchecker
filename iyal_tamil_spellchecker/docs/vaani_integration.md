@@ -50,5 +50,8 @@ The spellchecker includes highly sophisticated logic specifically built to resol
 - **BK-Tree Fallback**: If Vaani cannot provide suggestions, the BK-tree provides results based strictly on character similarity.
 
 ## Performance Impact
-- The Vaani `DB.json` is loaded into memory during startup (~4.5MB).
-- Strict Pure-Split prioritization keeps memory usage extremely low by short-circuiting expensive combination searches.
+- **Memory Footprint**: The Vaani `DB.json` is loaded into memory during startup (~4.5MB).
+- **Execution Speed**: 
+    - **LRU Caching**: Core morphological methods (`checkword`, `checkviku`) are wrapped in a 10,000-slot LRU cache. Recurring grammatical patterns in large documents resolve in $O(1)$ time after first calculation.
+    - **Suggestion Hash Map**: The engine uses a persistent hash dictionary for `(composed_word -> suggestions)` mapping. This replaced the legacy $O(N)$ list-search, preventing processing time from growing exponentially with document size. 
+- **Short-Circuiting**: Strict Pure-Split prioritization keeps memory usage extremely low by immediately terminating expensive recursive brute-force searches if a clean word-split is found.
