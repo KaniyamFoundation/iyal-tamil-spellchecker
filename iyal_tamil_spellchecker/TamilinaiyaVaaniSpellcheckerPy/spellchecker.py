@@ -246,6 +246,20 @@ class TamilinaiyaVaaniSpellchecker:
                 if self.checkword(p1, 0) and self.checkword(p2, 0):
                     return True
                     
+            # 3. M-Ending Vowel Sandhi
+            # Example: வண்ணம் + ஏற்றி -> வண்ணமேற்றி
+            if char == 'ம':
+                modifier = ""
+                if i + 1 < len(word) and word[i+1] in mapping:
+                    modifier = word[i+1]
+                vowel = mapping.get(modifier)
+                
+                p1 = p1_prefix + "ம்"
+                p2 = vowel + (word[i+2:] if modifier else word[i+1:])
+                
+                if self.checkword(p1, 0) and self.checkword(p2, 0):
+                    return True
+                    
         return False
 
     def validate_words(self, mwords, opt=True, mode="list"):
@@ -338,32 +352,34 @@ class TamilinaiyaVaaniSpellchecker:
                 # 1. Exact Word-splitting Priority (Pure space additions)
                 split_sugs_exact = self.get_split_suggestions(word)
                 
-                if split_sugs_exact:
-                    # If clean splits are found, bypass all fuzzy logic to prevent suggestion bloat
-                    for sw in split_sugs_exact:
-                        self.add_parinthu(parinthu, i, sw)
-                else:
-                    # 2. Fuzzy Suggestions and Typo Recovery
-                    suggestions = self.get_suggestions(word)
-                    unique_sug = list(dict.fromkeys(suggestions)) # Remove duplicates
-                    
-                    for nword in unique_sug:
-                        if self.checkword(nword, 7):
-                            if punarchi:
-                                # Handle punarchi/sandhi in suggestions
-                                if nword.endswith("ள்"):
-                                    self.add_parinthu(parinthu, i, nword[:-1] + "ட்")
-                                elif nword.endswith("ல்"):
-                                    self.add_parinthu(parinthu, i, nword[:-1] + "ற்")
-                                elif nword.endswith("ம்"):
-                                    self.add_parinthu(parinthu, i, nword[:-1] + sandi)
-                            else:
-                                self.add_parinthu(parinthu, i, nword + sandi)
-                                
-                        # Fuzzy word-splitting logic (handles joined words with typos layer)
+                # 2. Fuzzy Suggestions and Typo Recovery
+                suggestions = self.get_suggestions(word)
+                unique_sug = list(dict.fromkeys(suggestions)) # Remove duplicates
+                
+                for nword in unique_sug:
+                    if self.checkword(nword, 7):
+                        if punarchi:
+                            # Handle punarchi/sandhi in suggestions
+                            if nword.endswith("ள்"):
+                                self.add_parinthu(parinthu, i, nword[:-1] + "ட்")
+                            elif nword.endswith("ல்"):
+                                self.add_parinthu(parinthu, i, nword[:-1] + "ற்")
+                            elif nword.endswith("ம்"):
+                                self.add_parinthu(parinthu, i, nword[:-1] + sandi)
+                        else:
+                            self.add_parinthu(parinthu, i, nword + sandi)
+                            
+                    # Fuzzy word-splitting logic (handles joined words with typos layer)
+                    # We limit this if there's already an exact split to prevent bloat
+                    if not split_sugs_exact:
                         split_sugs = self.get_split_suggestions(nword)
                         for sw in split_sugs:
                             self.add_parinthu(parinthu, i, sw)
+                
+                # Add exact splits at the end (or beginning, but add_parinthu ensures order)
+                if split_sugs_exact:
+                    for sw in split_sugs_exact:
+                        self.add_parinthu(parinthu, i, sw)
 
                 if parinthu[i][0] > 0:
                     ottran[i][0] = 1

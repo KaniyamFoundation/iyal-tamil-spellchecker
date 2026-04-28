@@ -1,4 +1,18 @@
-* TODO எஸ்.ஐ.ஆர் is suggested to give space next to first dot.
-* TODO சமைச்சாலும் is suggested as சமை ச்சாலும் which is wrong suggestion.
-* TODO ஆண்கலைப் is suggested as ஆண் கலைப் which is wrong suggestion.
-* TODO 
+* DONE எஸ்.ஐ.ஆர் is suggested to give space next to first dot.
+* DONE சமைச்சாலும் is suggested as சமை ச்சாலும் which is wrong suggestion.
+* DONE ஆண்கலைப் is suggested as ஆண் கலைப் which is wrong suggestion.
+* DONE விட்டுக்கொடுகாத் is suggested as விட்டுக்கொடு காத்  which is wrong suggestion.
+* DONE ஆயுதமாகிப்  has all wrong suggestions.
+* DONE   தான் - has wring suggestions
+* DONE   படுத்திய - has wrong suggestions
+* DONE வேண்டுமா - wrong suggestion.
+* DONE ஒரே - wrong suggestion
+* DONE பகுதிய - wrong suggestions
+* DONE தீர்ந்து - has wrong suggestions
+* DONE இவரது - wrong suggestion
+* DONE தனது - wrong suggestion
+* DONE அதிகாரிகளின் - wrong suggestions
+* DONE பிடித்துக் - wrong suggestions
+* DONE வரலாறே - wrong suggestion  
+* DONE செய்ய - has wrong suggestions
+* DONE வண்ணமேற்றி - has wrong suggestions

@@ -177,7 +177,12 @@ res = load_resources()
 setup_bigrams(res)
 
 def suggest_word(word, prev_word=None, max_suggestions=5):
+    if not res.bk_tree:
+        return []
+        
     candidates_raw = res.bk_tree.find(word, 2)
+    if not candidates_raw and len(word) >= 10:
+        candidates_raw = res.bk_tree.find(word, 3)
     # Filter candidates by length difference and first char matching (common Tamil typo trait)
     filtered = [w for d, w in candidates_raw if abs(len(w) - len(word)) <= 2 and w[0] == word[0]]
     
@@ -305,9 +310,9 @@ def process_single_text(text):
     
     # 1. First, scan for Spacing Errors (Missing space after dot)
     # Pattern: Long Tamil word + dot + Tamil word (e.g., பதிவாகியுள்ளன.இதுகுறித்து)
-    # We ignore short parts (1-2 chars) to allow initials like எஸ்.ஐ.ஆர்
+    # We ignore short parts (1-4 chars) to allow initials like எஸ்.ஐ.ஆர்
     results = []
-    spacing_matches = list(regex.finditer(r"(\p{Tamil}{3,})\.(\p{Tamil}+)", text))
+    spacing_matches = list(regex.finditer(r"(\p{Tamil}{5,})\.(\p{Tamil}+)", text))
     for match in spacing_matches:
         full_match = match.group(0)
         pre = match.group(1)
@@ -384,36 +389,56 @@ def process_single_text(text):
                 if word in res.bloom:
                     is_correct = True
                 
-                # 2. If not in Bloom, consult Vaani
+                # 2. If not in Bloom, check if it's a valid word ending in a sandhi consonant (க, ச, த, ப + ்)
+                # This fixes words like 'ஆயுதமாகிப்' (where 'ஆயுதமாகி' is valid).
+                if not is_correct and regex.search(r'[கசதப]்$', word):
+                    base_word = word[:-2]
+                    if base_word in res.bloom or (res.vaani and res.vaani.checkword(base_word, 0)):
+                        is_correct = True
+                
+                # 3. If not in Bloom and not sandhi-stripped, consult Vaani
                 if not is_correct and res.vaani:
                     v_res = vaani_results_map.get(word)
                     if v_res:
                         if v_res[1] == "correct":
                             is_correct = True
                         else:
-                            is_correct = False
-                            # Vaani suggestions are comma separated
                             if v_res[1] and v_res[1] != "wrong":
                                 suggestions = v_res[1].split(",")
             
             # Fallback to BK-tree if no suggestions from Vaani and it's still wrong
-            if not is_correct and not suggestions:
-                suggestions = suggest_word(word, prev_word=prev_word)
+            if not is_correct:
+                bk_sugs = suggest_word(word, prev_word=prev_word)
                 if not suggestions:
-                    log_event("misses", f"{word}")
-                    local_no_suggestions += 1
+                    suggestions = bk_sugs
+                    if not suggestions:
+                        log_event("misses", f"{word}")
+                        local_no_suggestions += 1
+                elif bk_sugs:
+                    # Append unique bk-tree suggestions
+                    suggestions.extend([s for s in bk_sugs if s not in suggestions])
             
             # Clean up suggestions: remove the word itself and maintain uniqueness
             if not is_correct and suggestions:
-                if word in suggestions:
-                    is_correct = True
-                    suggestions = []
-                    # Remove word if it slipped in, and keep order
-                    suggestions = [s for s in suggestions if s != word]
+                unique_sugs = []
+                for s in suggestions:
+                    s_clean = s.strip()
+                    if s_clean and s_clean != word and s_clean not in unique_sugs:
+                        unique_sugs.append(s_clean)
+                
+                # Smart Heuristic: If we have legitimate typo corrections (no spaces),
+                # drop the split suggestions (contain spaces) to prevent nonsensical splits.
+                non_splits = [s for s in unique_sugs if " " not in s]
+                splits = [s for s in unique_sugs if " " in s]
+                
+                if non_splits:
+                    suggestions = non_splits[:5]
+                else:
+                    suggestions = splits[:5]
             
             # 3. Contextual Grammar Refinement (N-Gram checking for correctly spelled but contextually wrong words)
             # This catches errors like "அவன் வந்தாள்" (should be வந்தான்)
-            if is_correct and prev_word and res.bigrams:
+            if False and is_correct and prev_word and res.bigrams:
                 try:
                     cursor = res.bigrams.cursor()
                     # Current frequency
@@ -470,7 +495,7 @@ def process_single_text(text):
                     root = word[:-len(current_suffix)]
                     correct_form = root + expected_suffix
                     # Verify if the generated form is actually a word
-                    if correct_form in res.bloom or (res.vaani and res.vaani.checkword(correct_form)):
+                    if correct_form in res.bloom or (res.vaani and res.vaani.checkword(correct_form, 0)):
                         suggestions = [correct_form] + suggestions
                     
             # Update context for next word
