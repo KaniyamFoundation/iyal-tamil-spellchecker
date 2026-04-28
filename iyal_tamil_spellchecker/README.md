@@ -29,6 +29,16 @@ $ flask --app app.py run
 $ localhost:5000/
 ```
 
+## API Documentation (Swagger UI)
+
+Iyal includes built-in interactive API documentation. Once the server is running, you can access it at:
+
+```bash
+http://localhost:5000/apidocs/
+```
+
+This provides a visual interface to test endpoints, view JSON schemas, and explore versioned API routes.
+
 ## LanguageTool அமைப்பது எப்படி? (How to setup LanguageTool server)
 
 இயல் பிழைத்திருத்தி LanguageTool வழியாக இலக்கணப் பிழைகளைச் சுட்டிக்காட்ட, LanguageTool சேவையகம் பின்னணியில் இயங்க வேண்டும்.

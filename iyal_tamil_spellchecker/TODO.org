@@ -27,7 +27,8 @@ CLOSED: [2026-04-28 Tue 13:44]
 * TODO Have a message box to show update info
 * DONE protect from internet attacks
 CLOSED: [2026-04-28 Tue 13:38]
-* TODO Provide API docs 
+* DONE Provide API docs 
+CLOSED: [2026-04-28 Tue 14:19]
 * TODO add rules from https://www.vaantamil.com/
 * TODO add grammer suggestions like - https://www.gotamil.in/
 * TODO add any verb rules from https://sudar-ilakkanam.blogspot.com/

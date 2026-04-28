@@ -36,6 +36,14 @@ We moved from a single string-based `User.txt` to a **Folder-based structure** (
 *   **Decision**: Keep as Vanilla JS for now to maintain an extremely low footprint and simplicity.
 *   **Future Path**: If the UI requires complex state handling (like a real-time collaborative side-panel or deeper integration with grammar tools), React is the designated framework for migration. 
 
+## 📡 API Maturity & Developer Experience
+*   **Versioning**: We implemented side-by-side `/` and `/v1/` routes. 
+    *   *Decision*: This allows the web UI to stay on the stable root routes while external developers can pin their integrations to explicit versions.
+*   **Instrumentation**: Added `X-Process-Time` headers and `g.start` request timers.
+    *   *Decision*: To facilitate real-time monitoring of server bottlenecks without requiring external APM tools.
+*   **Self-Documenting API**: Integrated Swagger/OpenAPI.
+    *   *Decision*: To ensure the project is "API-First," making it trivial for others to build extensions (browser plugins, mobile apps) by using the interactive sandbox at `/apidocs/`.
+
 ## ⚖️ Credits & Attribution
 Recent updates to `editor.html` and documentation formalize the contributions of:
 *   Tamil Virtual University (TVU)
@@ -44,4 +52,4 @@ Recent updates to `editor.html` and documentation formalize the contributions of
 *   Neechalkaran (Vaani original lead)
 
 ---
-*Last Updated: 2026-04-26 (v0.0.3)*
+*Last Updated: 2026-04-28 (v0.0.3 - API & Instrumentation Update)*

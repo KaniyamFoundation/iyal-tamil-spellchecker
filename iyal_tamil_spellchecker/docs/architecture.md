@@ -17,6 +17,8 @@ The system is designed as a **Priority-Based Hybrid Validation Pipeline** that b
        v
 [ FLASK BACKEND (app.py) ]
        |
+       +--- 0. INSTRUMENTATION (Request Timers & Latency Tracking)
+       |
        +--- 1. CUSTOM OVERRIDES (rightwordlist.txt, wrongwordlist.txt, replacements.txt)
        |
        +--- 2. L1 CACHE (Bloom Filter: Instant Dictionary Check)
@@ -28,7 +30,7 @@ The system is designed as a **Priority-Based Hybrid Validation Pipeline** that b
        +--- 5. L4 FALLBACK (BK-Tree: Context-Weighted Similarity Search)
        |
        v
-[ JSON RESPONSE ] --> (UI Highlight / Suggestion Menu)
+[ JSON RESPONSE ] --> (X-Process-Time Header) --> (UI Highlight)
 ```
 
 ### 🛰️ Flow Diagram (Mermaid)
@@ -153,5 +155,7 @@ Currently, the application is optimized for local/internal use. For public deplo
 *   **Sandhi Engine**: Expanded Kutriyalugaram and Udampadumey reverse-validation in the morphology core.
 
 ### 3. API & Ecosystem
-*   **Developer SDK**: Provide automated API documentation (Swagger/OpenAPI).
-*   **Internet Security**: Implement full payload sanitization and IP-based rate limiting.
+*   **Developer SDK**: Provide automated API documentation using **Flasgger/Swagger** at `/apidocs/`.
+*   **API Versioning**: Implemented `/v1/` route mapping for future-proof integration.
+*   **Instrumentation**: Real-time server-side latency tracking via `X-Process-Time` headers.
+*   **Internet Security**: Implement full payload sanitization and IP-based rate limiting via `Flask-Limiter`.

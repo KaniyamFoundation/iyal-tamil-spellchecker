@@ -3,6 +3,13 @@
 All notable changes to the Iyal Tamil Spellchecker project will be documented in this file.
 
 ## [0.0.3] - 2026-04-28
+- **RESTful API Versioning (v1)**: Implemented side-by-side mapping for all core endpoints (e.g., `/v1/spellcheck`), ensuring backward compatibility for older clients while allowing for breaking changes in the future.
+- **Batch Processing Support**: Extended the spellcheck API to natively handle both single strings and JSON lists (batch mode), improving throughput for bulk text processing.
+- **Performance Instrumentation**: Integrated request-lifespan timers using Flask `g`. Every response now includes an `X-Process-Time` header (in milliseconds) for real-time latency monitoring.
+- **Interactive Documentation (Swagger UI)**: Integrated **Flasgger** to automatically generate OpenAPI/Swagger documentation. Developers can now test and explore the API via a web interface at `/apidocs/`.
+- **Response Compression**: Added `Flask-Compress` (Gzip/Brotli) to minify JSON payloads, significantly reducing bandwidth for large batch results.
+
+## [0.0.3] - 2026-04-27
 
 ### Added
 - **Deep Udampadumey Sandhi Engine (உடம்படுமெய்ப் புணர்ச்சி)**: Implemented mathematical reverse-concatenation inside the morphology core, allowing perfectly conjoined dynamic compounds (e.g., `செய்யவென்றே`) to validate as correct automatically without aggressively splitting into independent nouns.

@@ -6,6 +6,7 @@
 - **Vaani Integration**: Successfully integrated the rule-based Tamil spellchecker.
 - **Improved Suggestions**: Switched from simple edit-distance to rule-based morphological suggestions.
 - **Hybrid Architecture**: Optimized spellcheck flow to balance speed and accuracy.
+- **API Documentation & Instrumentation**: Integrated Swagger UI, API versioning (v1), and real-time latency headers (`X-Process-Time`).
 
 ### March 2026
 - **LanguageTool Integration**: Added grammar checking support for Tamil.
@@ -23,6 +24,10 @@
 - [x] Expanded custom vocabulary with over 100+ common loan words and their inflections.
 - [x] Optimized override hierarchy: User replacements now take precedence over the Bloom filter.
 - [x] Created `tests/` directory with automated verification scripts
+- [x] Integrated Swagger UI for interactive API documentation (`/apidocs/`)
+- [x] Implemented API Versioning (`/v1/`) for all core endpoints
+- [x] Added Performance Instrumentation (`X-Process-Time` headers)
+- [x] Enabled Batch Mode Support for bulk text processing
 
 ## Current Focus
 - Tuning suggestion strategies for edge cases.
