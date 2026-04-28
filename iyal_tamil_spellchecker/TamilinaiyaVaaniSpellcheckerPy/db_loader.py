@@ -43,7 +43,6 @@ class TamilinaiyaVaaniData:
         if not os.path.exists(user_txt_path):
             return
         with open(user_txt_path, 'r', encoding='utf-8') as f:
-            lines = f.read().split('\n')
-            if len(lines) >= 2:
-                self.user_oword = lines[0].split(',')
-                self.user_gword = lines[1].split(',')
+            lines = [line.strip() for line in f.readlines() if line.strip() and not line.startswith('#')]
+            self.user_oword = lines
+

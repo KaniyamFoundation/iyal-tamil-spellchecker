@@ -76,9 +76,8 @@ def load_resources():
         print("Warning: TamilinaiyaVaani DB could not be loaded")
         tamilinaiya_vaani_checker = None
     else:
-        # We can still point to User.txt for the engine if needed, 
-        # but we'll manage the main overrides in app.py directly
-        # tamilinaiya_vaani_data.load_user_data(TAMILINAIYA_VAANI_USER_PATH)
+        # Inject rightwordlist directly into the deep engine
+        tamilinaiya_vaani_data.load_user_data(os.path.join(USER_CONFIG_DIR, "rightwordlist.txt"))
         tamilinaiya_vaani_checker = TamilinaiyaVaaniSpellchecker(tamilinaiya_vaani_data)
         
     # Load User-defined overrides from dedicated config folder
@@ -300,5 +299,5 @@ def health():
     return "OK", 200
 
 if __name__ == "__main__":
-    #app.run(host='localhost', port=5001,debug=True)
-    app.run(debug=True)
+    app.run(host='localhost', port=5001,debug=True)
+    #app.run(debug=True)
