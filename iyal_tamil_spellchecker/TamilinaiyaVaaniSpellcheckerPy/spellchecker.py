@@ -1,5 +1,6 @@
 import re
 import unicodedata
+from functools import lru_cache
 try:
     from .db_loader import TamilinaiyaVaaniData
 except ImportError:
@@ -18,8 +19,7 @@ class TamilinaiyaVaaniSpellchecker:
         self.yauyir = {"யா":"ஆ","யி":"இ","யீ":"ஈ","யு":"உ","யூ":"ஊ","யெ":"எ","யே":"ஏ","யை":"ஐ","யொ":"ஒ","யோ":"ஓ","யௌ":"ஒள"}
         self.auyir = {"ா":"ஆ","ி":"இ","ீ":"ஈ","ு":"உ","ூ":"ஊ","ெ":"எ","ே":"ஏ","ை":"ஐ","ொ":"ஒ","ோ":"ஓ","ௌ":"ஒள"}
         
-        self.cacheword = []
-        self.cachesug = []
+        self.cache_map = {}
 
     def istamil(self, aword):
         for a in aword:
@@ -63,6 +63,7 @@ class TamilinaiyaVaaniSpellchecker:
             return True
         return False
 
+    @lru_cache(maxsize=10000)
     def checkviku(self, p, v, sv, c, sc, sugges):
         if c == "அ":
             if sv != "": return False
@@ -158,6 +159,7 @@ class TamilinaiyaVaaniSpellchecker:
                 return True
         return False
 
+    @lru_cache(maxsize=10000)
     def checkword(self, sol, type_code):
         if sol in self.data.user_oword:
             return True
@@ -201,25 +203,49 @@ class TamilinaiyaVaaniSpellchecker:
         self.enLog = opt
         
     def is_valid_compound(self, word):
-        if len(word) < 6: return False
+        if len(word) < 4: return False
         mapping = {
             "": "அ", "\u0bbe": "ஆ", "\u0bbf": "இ", "\u0bc0": "ஈ", "\u0bc1": "உ", "\u0bc2": "ஊ",
             "\u0bc6": "எ", "\u0bc7": "ஏ", "\u0bc8": "ஐ", "\u0bca": "ஒ", "\u0bcb": "ஓ", "\u0bcc": "ஔ"
         }
-        for i in range(3, len(word) - 2):
-            p1 = word[:i]
-            p2 = word[i:]
-            if self.checkword(p1, 0):
-                first_char = p2[0]
-                if first_char in ['வ', 'ய']:
-                    modifier = ""
-                    if len(p2) > 1 and p2[1] in mapping:
-                        modifier = p2[1]
-                    vowel = mapping.get(modifier, None)
-                    if vowel:
-                        pure_p2 = vowel + p2[1:] if modifier == "" else vowel + p2[2:]
-                        if self.checkword(pure_p2, 0):
-                            return True
+        kutri_cons = ['க', 'ச', 'ட', 'த', 'ப', 'ற']
+        
+        for i in range(1, len(word)):
+            p1_prefix = word[:i]
+            p2_suffix = word[i:]
+            
+            # 1. Udampadumey (Vowel Bridge)
+            # Example: செய்ய + எந்ரே -> செய்யவென்று
+            if self.checkword(p1_prefix, 0):
+                if p2_suffix:
+                    first_char = p2_suffix[0]
+                    if first_char in ['வ', 'ய']:
+                        modifier = ""
+                        if len(p2_suffix) > 1 and p2_suffix[1] in mapping:
+                            modifier = p2_suffix[1]
+                        vowel = mapping.get(modifier)
+                        if vowel:
+                            pure_p2 = vowel + (p2_suffix[2:] if modifier else p2_suffix[1:])
+                            if self.checkword(pure_p2, 0):
+                                return True
+                                
+            # 2. Kutriyalugaram (Vowel Dropping)
+            # Example: படித்து + உணர்ந்தான் -> படித்துணர்ந்தான்
+            char = word[i]
+            if char in kutri_cons:
+                modifier = ""
+                # Check for vowel modifier on the junction consonant
+                if i + 1 < len(word) and word[i+1] in mapping:
+                    modifier = word[i+1]
+                
+                vowel = mapping.get(modifier)
+                # Reconstruct p1 (ends in 'u') and p2 (starts with the hidden vowel)
+                p1 = p1_prefix + char + "ு"
+                p2 = vowel + (word[i+2:] if modifier else word[i+1:])
+                
+                if self.checkword(p1, 0) and self.checkword(p2, 0):
+                    return True
+                    
         return False
 
     def validate_words(self, mwords, opt=True, mode="list"):
@@ -284,17 +310,19 @@ class TamilinaiyaVaaniSpellchecker:
                         sandi = "ந்"
                         punarchi = True
 
-            # Cache check
             composed_word = word + sandi
-            for idx, cword in enumerate(self.cacheword):
-                if cword == composed_word:
-                    b = self.cachesug[idx]
-                    parinthu[i][1] = b
-                    if not self.istamil(b): parinthu[i][0] = 0
-                    elif ',' not in b: parinthu[i][0] = 1
-                    else: parinthu[i][0] = len(b.split(','))
+            cached_sug = self.cache_map.get(composed_word)
+            if cached_sug is not None:
+                parinthu[i][1] = cached_sug
+                if not self.istamil(cached_sug): parinthu[i][0] = 0
+                elif ',' not in cached_sug: parinthu[i][0] = 1
+                else: parinthu[i][0] = len(cached_sug.split(','))
+                
+                if parinthu[i][1] == "correct":
                     ottran[i][0] = 1
-                    break
+                elif parinthu[i][1] != "wrong":
+                    ottran[i][0] = 1
+                continue
             
             if ottran[i][0] == 0:
                 if word in self.data.user_oword:
@@ -306,7 +334,6 @@ class TamilinaiyaVaaniSpellchecker:
                     ottran[i][0] = 1
                     parinthu[i] = [0, "correct"]
             
-            # Suggestion logic
             if opt and ottran[i][0] == 0:
                 # 1. Exact Word-splitting Priority (Pure space additions)
                 split_sugs_exact = self.get_split_suggestions(word)
@@ -341,9 +368,8 @@ class TamilinaiyaVaaniSpellchecker:
                 if parinthu[i][0] > 0:
                     ottran[i][0] = 1
 
-            if len(word) > 0 and composed_word not in self.cacheword:
-                self.cacheword.append(composed_word)
-                self.cachesug.append(parinthu[i][1])
+            if len(word) > 0 and composed_word not in self.cache_map:
+                self.cache_map[composed_word] = parinthu[i][1]
 
         return parinthu
 
