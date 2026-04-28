@@ -78,6 +78,7 @@ def load_resources():
     else:
         # Inject rightwordlist directly into the deep engine
         tamilinaiya_vaani_data.load_user_data(os.path.join(USER_CONFIG_DIR, "rightwordlist.txt"))
+        tamilinaiya_vaani_data.load_vulgar_words(os.path.join(USER_CONFIG_DIR, "vulgar_splits.txt"))
         tamilinaiya_vaani_checker = TamilinaiyaVaaniSpellchecker(tamilinaiya_vaani_data)
         
     # Load User-defined overrides from dedicated config folder
@@ -104,7 +105,8 @@ def load_resources():
     for line in read_config_file("replacements.txt"):
         if "|" in line:
             orig, sug = line.split("|", 1)
-            custom_replacements[orig.strip()] = sug.strip()
+            # Support multiple comma-separated suggestions
+            custom_replacements[orig.strip()] = [s.strip() for s in sug.split(",")]
         
     return bloom, bk_tree, tamilinaiya_vaani_checker, custom_whitelist, custom_blacklist, custom_replacements
 
@@ -218,7 +220,7 @@ def spellcheck():
                 is_correct = True
             elif word in custom_replacements:
                 is_correct = False
-                suggestions = [custom_replacements[word]]
+                suggestions = custom_replacements[word]
             else:
                 # 1. Check Bloom filter for speed
                 if word in bloom:
@@ -299,5 +301,5 @@ def health():
     return "OK", 200
 
 if __name__ == "__main__":
-    app.run(host='localhost', port=5001,debug=True)
-    #app.run(debug=True)
+    #app.run(host='localhost', port=5001,debug=True)
+    app.run(debug=True)

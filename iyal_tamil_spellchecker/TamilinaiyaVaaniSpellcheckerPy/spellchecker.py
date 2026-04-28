@@ -197,6 +197,31 @@ class TamilinaiyaVaaniSpellchecker:
                         return True
         return False
 
+    def setLogEnable(self, opt):
+        self.enLog = opt
+        
+    def is_valid_compound(self, word):
+        if len(word) < 6: return False
+        mapping = {
+            "": "அ", "\u0bbe": "ஆ", "\u0bbf": "இ", "\u0bc0": "ஈ", "\u0bc1": "உ", "\u0bc2": "ஊ",
+            "\u0bc6": "எ", "\u0bc7": "ஏ", "\u0bc8": "ஐ", "\u0bca": "ஒ", "\u0bcb": "ஓ", "\u0bcc": "ஔ"
+        }
+        for i in range(3, len(word) - 2):
+            p1 = word[:i]
+            p2 = word[i:]
+            if self.checkword(p1, 0):
+                first_char = p2[0]
+                if first_char in ['வ', 'ய']:
+                    modifier = ""
+                    if len(p2) > 1 and p2[1] in mapping:
+                        modifier = p2[1]
+                    vowel = mapping.get(modifier, None)
+                    if vowel:
+                        pure_p2 = vowel + p2[1:] if modifier == "" else vowel + p2[2:]
+                        if self.checkword(pure_p2, 0):
+                            return True
+        return False
+
     def validate_words(self, mwords, opt=True, mode="list"):
         # Porting gpathil11
         results = []
@@ -277,7 +302,7 @@ class TamilinaiyaVaaniSpellchecker:
                     parinthu[i] = [0, "correct"]
             
             if ottran[i][0] == 0:
-                if self.checkword(word, 0):
+                if self.checkword(word, 0) or self.is_valid_compound(word):
                     ottran[i][0] = 1
                     parinthu[i] = [0, "correct"]
             
@@ -396,6 +421,7 @@ class TamilinaiyaVaaniSpellchecker:
     def get_split_suggestions(self, word, max_splits=5):
         import re
         def is_valid(w):
+            if w in self.data.vulgar_splits: return False
             if self.checkword(w, 7): return True
             if re.search(r'[கசதப]்$', w):
                 return self.checkword(w[:-2], 7)

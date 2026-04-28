@@ -1,0 +1,9 @@
+# Vulgar / Offensive Fragments Blacklist
+# This file prevents the recursive word splitter from computationally 
+# generating deeply offensive or wildly inaccurate dictionary fragments.
+# Add pure standalone words here that should NEVER be allowed as a suggested split.
+
+பேண்ட
+பேள
+பேளுகை
+பேளுதல்

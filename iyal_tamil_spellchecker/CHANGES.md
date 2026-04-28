@@ -2,9 +2,12 @@
 
 All notable changes to the Iyal Tamil Spellchecker project will be documented in this file.
 
-## [Unreleased]
+## [0.0.3] - 2026-04-28
 
 ### Added
+- **Deep Udampadumey Sandhi Engine (உடம்படுமெய்ப் புணர்ச்சி)**: Implemented mathematical reverse-concatenation inside the morphology core, allowing perfectly conjoined dynamic compounds (e.g., `செய்யவென்றே`) to validate as correct automatically without aggressively splitting into independent nouns.
+- **Dynamic Vulgarity Firewall**: Abstracted the N-Way recursive word split blacklist into `user_config/vulgar_splits.txt`, loaded dynamically via `db_loader`. This fundamentally blocks computationally "legal" but socially inappropriate vocabulary from ever rendering in suggestions.
+- **Multi-Slot Suggestion Dropdowns**: Extended `replacements.txt` parser to natively parse comma-separated text into dropdown menus in real-time (e.g., `இருப்பேண்டா|இருப்பேன்,இருப்பேன்டா,இருக்கிறேன்`).
 - Integrated Tamilinaiya Vanni (Vaani) rule-based spellchecker engine for superior accuracy.
 - Added support for morphologically aware Tamil suggestions and sandhi/punarchi rules.
 - Implemented a hybrid spellchecking strategy combining Bloom filters and Vaani.
@@ -23,6 +26,7 @@ All notable changes to the Iyal Tamil Spellchecker project will be documented in
 - Updated localhost port in README for consistency.
 
 ### Fixed
+- **Native OS DOM Override Fix**: Inserted `spellcheck="false"` strictly bounding the DOM manipulation scope to prevent macOS/Windows native Tamil dictionaries from overlapping our `<span class="misspelled">` CSS classes during ZWNJ decomposed inputs (`க`+`ெ`+`ா`).
 - Resolved a bug where words found in the BK-tree (like "ஒட்டுக") were incorrectly flagged as errors.
 - Fixed a logic flaw where Rule-based results could overwrite verified Bloom filter results.
 - Corrected relative import issues allowing the engine to be run both standalone and as a package.

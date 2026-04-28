@@ -41,7 +41,9 @@ The spellchecker includes highly sophisticated logic specifically built to resol
 1. **Recursive N-Way Splits**: Automatically breaks massively joined structures (e.g. `அங்கிங்கெனாதபடிஎங்கும்பிரகாசமாய்`) into native 3 or 4-layer bounds.
 2. **Anti-Fragmentation Filter**: Calculates space metrics dynamically. If a 1-cut split exists, it actively deletes 2-cut variables (burying algorithmic bloat like `பிழை கள் தானாகவே` to prioritize `பிழைகள் தானாகவே`).
 3. **Dangling Sandhi Protection**: Autonomously parses and accommodates terminal linker consonants (`க், ச், த், ப்`). For example, `தானாகவேகோடிட்டுக்` will still cleanly split, securely holding the syntax marker.
-4. **Pure-Split Preemption Bypass**: Prioritizes valid unspaced text blocks over typo-level combinatorial guessing.
+4. **Deep Udampadumey Sandhi De-concatenation**: Validates mathematically flawless Vowel + Bridge + Vowel structures (`செய்யவென்றே`). By structurally reversing the terminal suffix string (`வென்றே` -> `என்றே`), it successfully verifies noun/verb pairs, protecting natively combined grammar compounds without forcing unnecessary splits.
+5. **Pure-Split Preemption Bypass**: Prioritizes valid unspaced text blocks over typo-level combinatorial guessing.
+6. **Anti-Offensive Vulgarity Firewall**: Uses an isolated, computationally cheap `O(1)` validation set (`vulgar_splits.txt`) deeply embedded into the recursive splitter to instantly terminate mathematical tree branches that generate explicit or wildly inappropriate vocabulary fragments (`பேண்ட`), guaranteeing clean UX.
 
 ### Suggestions Fallback
 - **Rule-Based Primary**: Suggestions are first sought from the Vaani engine, which understands word origins and suffixes.
