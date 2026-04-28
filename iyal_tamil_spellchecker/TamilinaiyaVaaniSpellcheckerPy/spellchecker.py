@@ -283,31 +283,35 @@ class TamilinaiyaVaaniSpellchecker:
             
             # Suggestion logic
             if opt and ottran[i][0] == 0:
-                suggestions = self.get_suggestions(word)
-                unique_sug = list(dict.fromkeys(suggestions)) # Remove duplicates
+                # 1. Exact Word-splitting Priority (Pure space additions)
+                split_sugs_exact = self.get_split_suggestions(word)
                 
-                for nword in unique_sug:
-                    if self.checkword(nword, 7):
-                        if punarchi:
-                            # Handle punarchi/sandhi in suggestions
-                            if nword.endswith("ள்"):
-                                self.add_parinthu(parinthu, i, nword[:-1] + "ட்")
-                            elif nword.endswith("ல்"):
-                                self.add_parinthu(parinthu, i, nword[:-1] + "ற்")
-                            elif nword.endswith("ம்"):
-                                self.add_parinthu(parinthu, i, nword[:-1] + sandi)
-                        else:
-                            self.add_parinthu(parinthu, i, nword + sandi)
-                            
-                    # Fuzzy word-splitting logic (handles joined words with typos)
-                    split_sugs = self.get_split_suggestions(nword)
-                    for sw in split_sugs:
+                if split_sugs_exact:
+                    # If clean splits are found, bypass all fuzzy logic to prevent suggestion bloat
+                    for sw in split_sugs_exact:
                         self.add_parinthu(parinthu, i, sw)
-                
-                # Word-splitting logic for joined words (missing space)
-                split_sugs = self.get_split_suggestions(word)
-                for sw in split_sugs:
-                    self.add_parinthu(parinthu, i, sw)
+                else:
+                    # 2. Fuzzy Suggestions and Typo Recovery
+                    suggestions = self.get_suggestions(word)
+                    unique_sug = list(dict.fromkeys(suggestions)) # Remove duplicates
+                    
+                    for nword in unique_sug:
+                        if self.checkword(nword, 7):
+                            if punarchi:
+                                # Handle punarchi/sandhi in suggestions
+                                if nword.endswith("ள்"):
+                                    self.add_parinthu(parinthu, i, nword[:-1] + "ட்")
+                                elif nword.endswith("ல்"):
+                                    self.add_parinthu(parinthu, i, nword[:-1] + "ற்")
+                                elif nword.endswith("ம்"):
+                                    self.add_parinthu(parinthu, i, nword[:-1] + sandi)
+                            else:
+                                self.add_parinthu(parinthu, i, nword + sandi)
+                                
+                        # Fuzzy word-splitting logic (handles joined words with typos layer)
+                        split_sugs = self.get_split_suggestions(nword)
+                        for sw in split_sugs:
+                            self.add_parinthu(parinthu, i, sw)
 
                 if parinthu[i][0] > 0:
                     ottran[i][0] = 1
@@ -389,7 +393,14 @@ class TamilinaiyaVaaniSpellchecker:
             if not temp_word: break
         return sug
 
-    def get_split_suggestions(self, word, max_splits=3):
+    def get_split_suggestions(self, word, max_splits=5):
+        import re
+        def is_valid(w):
+            if self.checkword(w, 7): return True
+            if re.search(r'[கசதப]்$', w):
+                return self.checkword(w[:-2], 7)
+            return False
+            
         suggestions = []
         min_len = 3
         if len(word) < min_len * 2:
@@ -397,25 +408,30 @@ class TamilinaiyaVaaniSpellchecker:
             
         def recurse(remaining_word, parts, depth):
             if depth == max_splits:
-                if len(remaining_word) >= min_len and self.checkword(remaining_word, 7):
+                if len(remaining_word) >= min_len and is_valid(remaining_word):
                     suggestions.append(" ".join(parts + [remaining_word]))
                 return
                 
             # If the current remaining chunk itself is fully valid, we can terminate early
-            if len(remaining_word) >= min_len and self.checkword(remaining_word, 7):
+            if len(remaining_word) >= min_len and is_valid(remaining_word):
                 if len(parts) > 0:
                     suggestions.append(" ".join(parts + [remaining_word]))
                     
             # Keep splitting
             for i in range(min_len, len(remaining_word) - min_len + 1):
                 p1 = remaining_word[:i]
-                if self.checkword(p1, 7):
+                if is_valid(p1):
                     recurse(remaining_word[i:], parts + [p1], depth + 1)
 
         recurse(word, [], 1)
         
-        # Return unique suggestions (preserves order)
-        return list(dict.fromkeys(suggestions))
+        # Return unique suggestions, prioritizing combinations with the fewest splits (avoids over-segmentation)
+        unique_sugs = list(dict.fromkeys(suggestions))
+        if not unique_sugs:
+            return []
+            
+        min_spaces = min(s.count(" ") for s in unique_sugs)
+        return [s for s in unique_sugs if s.count(" ") == min_spaces]
 
     def combination(self, word_list, sug_list):
         if not word_list: return sug_list
