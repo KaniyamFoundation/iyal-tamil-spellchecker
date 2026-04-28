@@ -28,6 +28,7 @@ BK_TREE_PATH = BASE_DIR / "bk_tree.pkl"
 LOG_DIR = BASE_DIR / "logs"
 USER_CONFIG_DIR = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "user_config"
 TAMILINAIYA_VAANI_DB_PATH = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "DB.json"
+BIGRAM_DB_PATH = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "bigrams.db"
 METRICS_FILE = BASE_DIR / "metrics.json"
 
 # Logging setup with Pathlib
@@ -47,6 +48,7 @@ class SpellCheckerResources:
     whitelist: set = field(default_factory=set)
     blacklist: set = field(default_factory=set)
     replacements: dict = field(default_factory=dict)
+    bigrams: sqlite3.Connection = None
 
 # ---------------------- Flask Setup ----------------------
 app = Flask(__name__)
@@ -108,15 +110,52 @@ def load_resources() -> SpellCheckerResources:
         vaani=vaani_checker,
         whitelist=whitelist,
         blacklist=blacklist,
-        replacements=replacements
+        replacements=replacements,
+        bigrams=None
     )
 
-res = load_resources()
+def setup_bigrams(resources: SpellCheckerResources):
+    """Attempt to load the bigram database if it exists."""
+    if BIGRAM_DB_PATH.exists():
+        try:
+            conn = sqlite3.connect(str(BIGRAM_DB_PATH), check_same_thread=False)
+            resources.bigrams = conn
+            print("Bigram context database loaded successfully.")
+        except Exception as e:
+            print(f"Error loading Bigram DB: {e}")
 
-def suggest_word(word, max_suggestions=5):
-    candidates = res.bk_tree.find(word, 2)
-    filtered = [(w, d) for d, w in candidates if abs(len(w) - len(word)) <= 2 and w[0] == word[0]]
-    return [w for w, d in sorted(filtered, key=lambda x: x[1])[:max_suggestions]]
+res = load_resources()
+setup_bigrams(res)
+
+def suggest_word(word, prev_word=None, max_suggestions=5):
+    candidates_raw = res.bk_tree.find(word, 2)
+    # Filter candidates by length difference and first char matching (common Tamil typo trait)
+    filtered = [w for d, w in candidates_raw if abs(len(w) - len(word)) <= 2 and w[0] == word[0]]
+    
+    if not filtered:
+        return []
+
+    # If we have a previous word and a bigram DB, rank the suggestions by frequency
+    if prev_word and res.bigrams:
+        scored = []
+        try:
+            cursor = res.bigrams.cursor()
+            for cand in filtered:
+                # Query frequency of the pair (prev_word, cand)
+                cursor.execute("SELECT freq FROM bigrams WHERE word1=? AND word2=?", (prev_word, cand))
+                row = cursor.fetchone()
+                freq = row[0] if row else 0
+                scored.append((cand, freq))
+            
+            # Sort by frequency (highest first)
+            ranked = [pair[0] for pair in sorted(scored, key=lambda x: x[1], reverse=True)]
+            return ranked[:max_suggestions]
+        except Exception as e:
+            print(f"Bigram ranking error: {e}")
+            return sorted(filtered)[:max_suggestions]
+    
+    # Fallback to simple alphabetical or proximity sorting
+    return sorted(filtered)[:max_suggestions]
 
 def log_event(subfolder, content):
     timestamp = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
@@ -140,6 +179,24 @@ def index():
     except:
         pass
     return render_template("editor.html", version=version)
+
+# ---------------------- Grammar Rules ----------------------
+
+# Map of common pronouns to their expected verb suffixes
+PRONOUN_AGREEMENT = {
+    "நான்": "ேன்",
+    "நீ": "ாய்",
+    "அவன்": "ான்",
+    "அவள்": "ாள்",
+    "அவர்": "ார்",
+    "அது": "து",
+    "நாம்": "ோம்",
+    "நாங்கள்": "ோம்",
+    "நீங்கள்": "ீர்கள்",
+    "அவர்கள்": "ார்கள்",
+    "அவை": "ன"
+}
+
 
 # Initialize
 metrics_store = load_metrics()
@@ -205,8 +262,11 @@ def spellcheck():
             vaani_parinthu = res.vaani.validate_words(words)
             vaani_results_map = {words[i]: vaani_parinthu[i] for i in range(len(words))}
 
+        prev_word = None
         for word in words:
             if word in seen:
+                # We still need to update prev_word to maintain context for the NEXT word
+                prev_word = word
                 continue
             seen.add(word)
             
@@ -240,7 +300,7 @@ def spellcheck():
             
             # Fallback to BK-tree if no suggestions from Vaani and it's still wrong
             if not is_correct and not suggestions:
-                suggestions = suggest_word(word)
+                suggestions = suggest_word(word, prev_word=prev_word)
                 if not suggestions:
                     log_event("misses", f"{word}")
                     local_no_suggestions += 1
@@ -250,9 +310,73 @@ def spellcheck():
                 if word in suggestions:
                     is_correct = True
                     suggestions = []
-                else:
                     # Remove word if it slipped in, and keep order
                     suggestions = [s for s in suggestions if s != word]
+            
+            # 3. Contextual Grammar Refinement (N-Gram checking for correctly spelled but contextually wrong words)
+            # This catches errors like "அவன் வந்தாள்" (should be வந்தான்)
+            if is_correct and prev_word and res.bigrams:
+                try:
+                    cursor = res.bigrams.cursor()
+                    # Current frequency
+                    cursor.execute("SELECT freq FROM bigrams WHERE word1=? AND word2=?", (prev_word, word))
+                    row = cursor.fetchone()
+                    current_freq = row[0] if row else 0
+                    
+                    # Only investigate if current connection is weak/missing
+                    if current_freq < 2:
+                        # Find morphological "neighbors" (edit distance 1 or 2)
+                        neighbors = res.bk_tree.find(word, 2)
+                        better_matches = []
+                        
+                        for dist, neighbor in neighbors:
+                            if neighbor == word: continue
+                            
+                            # Check if the neighbor has a strong connection to prev_word
+                            cursor.execute("SELECT freq FROM bigrams WHERE word1=? AND word2=?", (prev_word, neighbor))
+                            n_row = cursor.fetchone()
+                            n_freq = n_row[0] if n_row else 0
+                            
+                            # If a neighbor is significantly more likely (e.g., freq > 10), it's probably what the user meant
+                            if n_freq > 10: 
+                                better_matches.append((neighbor, n_freq))
+                        
+                        if better_matches:
+                            # We found a legitimate grammar mismatch!
+                            is_correct = False
+                            # Sort by frequency and add to suggestions
+                            better_matches.sort(key=lambda x: x[1], reverse=True)
+                            suggestions = [m[0] for m in better_matches] + suggestions
+                            # Uniqueness
+                            suggestions = list(dict.fromkeys(suggestions))
+                except Exception as e:
+                    print(f"Grammar refinement error: {e}")
+
+            # 4. Rule-Based Pronominal Agreement (Fallback for sparse N-grams)
+            if is_correct and prev_word in PRONOUN_AGREEMENT:
+                expected_suffix = PRONOUN_AGREEMENT[prev_word]
+                # If current word looks like a verb (ends in common verb endings) but doesn't match the pronoun
+                # common_verb_endings = ["ான்", "ாள்", "ார்", "து", "ேன்", "ோம்", "ாய்", "ீர்கள்", "ார்கள்", "ன"]
+                verb_endings = list(PRONOUN_AGREEMENT.values())
+                
+                current_suffix = None
+                for ve in verb_endings:
+                    if word.endswith(ve):
+                        current_suffix = ve
+                        break
+                
+                if current_suffix and current_suffix != expected_suffix:
+                    # Mismatch found! e.g. "அவர்கள்" followed by something ending in "ான்"
+                    is_correct = False
+                    # Generate the correct version by swapping suffixes
+                    root = word[:-len(current_suffix)]
+                    correct_form = root + expected_suffix
+                    # Verify if the generated form is actually a word
+                    if correct_form in res.bloom or (res.vaani and res.vaani.checkword(correct_form)):
+                        suggestions = [correct_form] + suggestions
+                    
+            # Update context for next word
+            prev_word = word
             
             if is_correct:
                 results.append({"word": word, "correct": True})
