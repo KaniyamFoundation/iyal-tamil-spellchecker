@@ -21,9 +21,11 @@ The system is designed as a **Priority-Based Hybrid Validation Pipeline** that b
        |
        +--- 2. L1 CACHE (Bloom Filter: Instant Dictionary Check)
        |
-       +--- 3. L2 ENGINE (Vaani: Morphological Rule-Check)
+       +--- 3. L2 CONTEXT (Bigram DB: Ranking & Grammar Shadow Match)
        |
-       +--- 4. L3 FALLBACK (BK-Tree: Fuzzy Similarity Search)
+       +--- 4. L3 ENGINE (Vaani: Morphological Rule-Check & Sandhi)
+       |
+       +--- 5. L4 FALLBACK (BK-Tree: Context-Weighted Similarity Search)
        |
        v
 [ JSON RESPONSE ] --> (UI Highlight / Suggestion Menu)
@@ -50,12 +52,17 @@ graph TD
     F -- "Found?" --> Final
     F -- "Not Found?" --> G{Layer 3: Vaani}
     
-    G -- "Grammatically Correct?" --> Final
+    G -- "Grammatically Correct?" --> G_Context{Layer 4: Context Check}
+    G_Context -- "High Bigram Freq?" --> Final
+    G_Context -- "Bigram Mismatch?" --> G_Grammar[Shadow Mapping & Correction]
+    
+    G_Grammar --> Final
+    
     G -- "Morphological Error?" --> G1[Generate Root-based Suggestions]
     
-    G1 --> H{Layer 4: BK-Tree}
+    G1 --> H{Layer 5: BK-Tree}
     G -- "Unknown Word?" --> H
-    H --> H1[Fuzzy Match Suggestions]
+    H --> H1[Context-Ranked Suggestions]
     H1 --> Final
     end
     
@@ -140,7 +147,10 @@ Currently, the application is optimized for local/internal use. For public deplo
 *   **Option**: Migrate to **TipTap / ProseMirror** for a professional rich-text experience that supports native "decorations" without direct HTML manipulation.
 
 ### 2. Refining Tamil Grammar Rules
-*   **Rule Expansion**: While the *connection* to LanguageTool is complete, we plan to develop and contribute **Advanced Syntactic Rules** (e.g., subject-verb agreement, gender-suffix harmony) to catch errors that basic spellcheckers miss.
+*   **Contextual Shadow Matching**: Implemented statistical pronominal agreement using an **Ultra-Lite 26MB Bigram database**. This database is pruned to the **Top 100,000 core words** with **Top-3 continuations**, ensuring a tiny disk footprint while maintaining high-frequency contextual intelligence.
+*   **Heuristic Fallback**: Developed a hardcoded pronominal agreement layer (`PRONOUN_AGREEMENT`) to ensure subject-verb harmony for common pronouns (நான், நீ, அவன், அவர்கள்). This provides a deterministic safety net for grammar errors that fall outside the pruned statistical database.
+
+*   **Sandhi Engine**: Expanded Kutriyalugaram and Udampadumey reverse-validation in the morphology core.
 
 ### 3. API & Ecosystem
 *   **Developer SDK**: Provide automated API documentation (Swagger/OpenAPI).

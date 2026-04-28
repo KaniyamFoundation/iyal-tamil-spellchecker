@@ -28,7 +28,7 @@ BK_TREE_PATH = BASE_DIR / "bk_tree.pkl"
 LOG_DIR = BASE_DIR / "logs"
 USER_CONFIG_DIR = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "user_config"
 TAMILINAIYA_VAANI_DB_PATH = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "DB.json"
-BIGRAM_DB_PATH = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "bigrams.db"
+BIGRAM_DB_PATH = BASE_DIR / "TamilinaiyaVaaniSpellcheckerPy" / "data" / "bigrams_lite.db"
 METRICS_FILE = BASE_DIR / "metrics.json"
 
 # Logging setup with Pathlib

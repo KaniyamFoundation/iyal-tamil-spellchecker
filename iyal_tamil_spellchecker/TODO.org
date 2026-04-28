@@ -34,11 +34,12 @@ CLOSED: [2025-05-29 Thu 22:59]
 * DONE Implement Kutriyalugaram (குற்றியலுகரம்) native reverse-concatenation in the core morphology engine
 * TODO Build UI listener to intercept manual human text replacements for autonomous dictionary learning
 * TODO Write native XML regex rules directly into local LanguageTool grammar.xml for cross-word grammar warnings
-* TODO Develop Context-Aware suggestion ranking using Bigram (N-gram) probabilities
+* DONE Develop Context-Aware suggestion ranking using Bigram (N-gram) probabilities
   - Use Bigrams to resolve Sandhi (Migum/Miga) ties in suggestions
   - Implement Gender/Number agreement scoring between Subject and Verb pairs
   - Prioritize idiomatic phrases in the suggestion dropdowns
-  - Store Top 100k Bigrams in a lightweight SQLite index for O(1) context scoring
+  - Store Top 2,000,000 Bigrams in a lightweight SQLite index for O(1) context scoring (Ingested from 2.2GB corpus)
+* DONE Implement Rule-Based Pronominal Agreement Layer (Heuristic fallback)
 * TODO Dockerize Iyal engine and Java LanguageTool server using docker-compose
 * TODO Implement UI tooltips to explain specific error types (Sandhi vs. Colloquial)
 * TODO Add API Rate Limiting (Flask-Limiter) for public-facing deployments
