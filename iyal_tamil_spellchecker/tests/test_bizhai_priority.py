@@ -6,7 +6,13 @@ from TamilinaiyaVaaniSpellcheckerPy.db_loader import TamilinaiyaVaaniData
 vd = TamilinaiyaVaaniData("TamilinaiyaVaaniSpellcheckerPy/data/DB.json")
 vd.load()
 
-class TestChecker(TamilinaiyaVaaniSpellchecker):
+class MyChecker(TamilinaiyaVaaniSpellchecker):
+    def test_log(self, text):
+        print(f"Testing: {text}")
+        
+    def add_parinthu(self, parinthu, i, w):
+        super().add_parinthu(parinthu, i, w)
+
     def validate_words(self, mwords, opt=True, mode="list"):
         # We will override validate_words here to test the logic change
         parinthu = [[0, "wrong"] for _ in range(len(mwords))]
@@ -46,5 +52,5 @@ class TestChecker(TamilinaiyaVaaniSpellchecker):
                     
         return parinthu
 
-sc = TestChecker(vd)
+sc = MyChecker(vd)
 print(sc.validate_words(["பிழைகள்தானாகவே"])[0][1])

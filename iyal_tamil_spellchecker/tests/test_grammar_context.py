@@ -1,14 +1,19 @@
 import sqlite3
 import os
+import pytest
 from pathlib import Path
 
 # Path to the bigram DB
 DB_PATH = Path("TamilinaiyaVaaniSpellcheckerPy/data/bigrams_lite.db")
 
+@pytest.mark.parametrize("prev, current, expected_better", [
+    ("அவன்", "வந்தாள்", "வந்தான்"),
+    ("அவள்", "வந்தான்", "வந்தாள்"),
+    ("அவர்கள்", "வந்தான்", "வந்தார்கள்"),
+])
 def test_grammar_agreement(prev, current, expected_better):
     if not DB_PATH.exists():
-        print(f"Skipping: DB not ready yet at {DB_PATH}")
-        return
+        pytest.skip(f"Skipping: DB not ready yet at {DB_PATH}")
     
     try:
         conn = sqlite3.connect(str(DB_PATH))
@@ -40,21 +45,3 @@ def test_grammar_agreement(prev, current, expected_better):
     except Exception as e:
         print(f"Error during test: {e}")
 
-if __name__ == "__main__":
-    print("\nIyal Contextual Grammar Verification")
-    print("=" * 40)
-    
-    print("\nCase 1: Gender Mismatch (He -> She-Verb)")
-    test_grammar_agreement("அவன்", "வந்தாள்", "வந்தான்")
-    
-    print("\nCase 2: Gender Mismatch (She -> He-Verb)")
-    test_grammar_agreement("அவள்", "வந்தான்", "வந்தாள்")
-    
-    print("\nCase 3: Plurality Mismatch (They -> He-Verb)")
-    test_grammar_agreement("அவர்கள்", "வந்தான்", "வந்தார்கள்")
-
-    print("\n" + "=" * 40)
-    if not DB_PATH.exists():
-        print("NOTE: The database build is still active. Please run this script again in a few minutes.")
-    else:
-        print("Tests complete.")

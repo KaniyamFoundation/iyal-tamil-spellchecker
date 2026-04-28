@@ -1,5 +1,7 @@
-from db_loader import TamilinaiyaVaaniData
-from spellchecker import TamilinaiyaVaaniSpellchecker
+import sys, os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from TamilinaiyaVaaniSpellcheckerPy.db_loader import TamilinaiyaVaaniData
+from TamilinaiyaVaaniSpellcheckerPy.spellchecker import TamilinaiyaVaaniSpellchecker
 
 data = TamilinaiyaVaaniData('/home/shrini/dev/others/Tamilinaiya-Spellchecker/python_port/data/DB.json')
 if data.load():

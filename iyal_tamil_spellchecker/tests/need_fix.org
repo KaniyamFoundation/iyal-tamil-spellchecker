@@ -1,0 +1,4 @@
+* TODO எஸ்.ஐ.ஆர் is suggested to give space next to first dot.
+* TODO சமைச்சாலும் is suggested as சமை ச்சாலும் which is wrong suggestion.
+* TODO ஆண்கலைப் is suggested as ஆண் கலைப் which is wrong suggestion.
+* TODO 

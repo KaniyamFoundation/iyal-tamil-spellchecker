@@ -2,7 +2,13 @@ import sys, os
 sys.path.append(os.getcwd())
 from app import load_resources
 
-bloom, bk_tree, tamilinaiya_vaani_checker, custom_whitelist, custom_blacklist, custom_replacements = load_resources()
+res = load_resources()
+bloom = res.bloom
+bk_tree = res.bk_tree
+tamilinaiya_vaani_checker = res.vaani
+custom_whitelist = res.whitelist
+custom_blacklist = res.blacklist
+custom_replacements = res.replacements
 
 word = "கொடுத்துதவினான்"
 print("In custom_whitelist?", word in custom_whitelist)

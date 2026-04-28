@@ -5,7 +5,7 @@ from TamilinaiyaVaaniSpellcheckerPy.db_loader import TamilinaiyaVaaniData
 
 vd = TamilinaiyaVaaniData("TamilinaiyaVaaniSpellcheckerPy/data/DB.json")
 vd.load()
-vd.user_oword.append("அங்கிங்கெனாதபடி")
+vd.user_oword.add("அங்கிங்கெனாதபடி")
 sc = TamilinaiyaVaaniSpellchecker(vd)
 
 word = "அங்கிங்கெனாதபடிஎங்கும்பிரகாசமாய்"
