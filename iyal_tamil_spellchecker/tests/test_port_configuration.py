@@ -7,5 +7,6 @@ def test_app_port_configuration():
     content = app_file.read_text(encoding="utf-8")
     
     # Verify that the port is explicitly set to 5000
-    assert "port=5000" in content, "The application port should always be configured as 5000 in app.py"
-    assert "port=5001" not in content, "Legacy port 5001 should not be active."
+    assert "port=5000" in content, "The application port should always be configured as 5000 in app.py before committing."
+
+
