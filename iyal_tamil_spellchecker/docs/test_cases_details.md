@@ -21,6 +21,15 @@ This module verifies that the user-defined dictionary configurations securely ov
 *   **`test_blacklist_forces_wrong`**: Verifies that words in `wrongwordlist.txt` are flagged as incorrect, effectively blocking known typos that might theoretically bypass morphological logic.
 *   **`test_replacements_exact_match`**: Tests that `replacements.txt` functions properly by strictly mapping incorrect patterns (e.g., "பஸ்") to exact target suggestions (e.g., "பேருந்து").
 
+### 2. Noun Morphology Inflections (Whitelists Expansion)
+**Files:** `test_morphology.py`, `test_morphology_200.py`
+Validates rule-based reverse stripping for primary case endings, secondary postpositions, and Grantha characters.
+*   **`test_derived_whitelist_words`**: Rigorously tests plural, instrumental, genitive, locative, comitative, and adverbial modifiers (e.g., `அருட்கொடைகளால்`, `அருட்கொடைகளின்`, `சுரேஷின்`, `குர்ஆனாகவே`) mapping back appropriately.
+
+*   **`test_complex_derived_words_validation`**: Tests robust composite suffix strings executing safely over bulk arrays.
+
+
+
 ### 2. Bloom Filter Caching (Level 1)
 **File:** `test_level1_bloom.py`
 Validates the fast-pass initial cache layer.

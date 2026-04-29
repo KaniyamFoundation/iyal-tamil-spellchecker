@@ -62,9 +62,11 @@ You can pass a list of strings to check multiple snippets in parallel.
       "correct": false,
       "suggestions": ["சரியான", "சரியாக"],
       "word": "சரியன",
-      "type": "grammar",           // Only present for custom engine-level regex spacing exceptions
-      "message": "Error details"    // Only present for custom engine-level regex spacing exceptions
+      "error_type": "spelling",    // Optional: "sandhi", "colloquial", "blacklist", "spelling", "grammar"
+      "type": "grammar",           // Internal UI routing flag ("spell" or "grammar")
+      "message": "Error details"    // Contextual explanation if relevant
     }
+
   ]
 }
 ```

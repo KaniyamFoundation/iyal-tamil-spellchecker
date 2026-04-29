@@ -333,10 +333,12 @@ def process_single_text(text):
                     replacements = [r["value"] for r in match.get("replacements", [])]
                     grammar_errors.append({
                         "word": err_word,
+                        "error_type": "grammar",
                         "suggestions": replacements,
                         "message": match.get("message", ""),
                         "shortMessage": match.get("shortMessage", "")
                     })
+
         except Exception as e:
             print("LanguageTool API error:", e)
         return grammar_errors
@@ -361,15 +363,18 @@ def process_single_text(text):
             
             is_correct = False
             suggestions = []
+            error_type = "spelling"
             
             # 0. Check Custom Dictionary Overrides
             if word in res.blacklist:
                 is_correct = False
+                error_type = "blacklist"
             elif word in res.whitelist:
                 is_correct = True
             elif word in res.replacements:
                 is_correct = False
                 suggestions = res.replacements[word]
+                error_type = "colloquial"
             else:
                 # 1. Check Bloom filter for speed
                 if word in res.bloom:
@@ -404,6 +409,7 @@ def process_single_text(text):
                     combined = prev_word + word
                     if combined in res.bloom or combined in res.whitelist or (res.vaani and res.vaani.checkword(combined, 0)):
                         suggestions.insert(0, combined)
+                        error_type = "sandhi"
             
             # Fallback to BK-tree if no suggestions from Vaani and it's still wrong
             if not is_correct:
@@ -434,6 +440,8 @@ def process_single_text(text):
                     suggestions = non_splits[:5]
                 else:
                     suggestions = splits[:5]
+                    error_type = "sandhi"
+
             
             # 3. Contextual Grammar Refinement (N-Gram checking for correctly spelled but contextually wrong words)
             # This catches errors like "அவன் வந்தாள்" (should be வந்தான்)
@@ -490,6 +498,7 @@ def process_single_text(text):
                 if current_suffix and current_suffix != expected_suffix:
                     # Mismatch found! e.g. "அவர்கள்" followed by something ending in "ான்"
                     is_correct = False
+                    error_type = "grammar"
                     # Generate the correct version by swapping suffixes
                     root = word[:-len(current_suffix)]
                     correct_form = root + expected_suffix
@@ -507,6 +516,7 @@ def process_single_text(text):
                 results.append({
                     "word": word,
                     "correct": False,
+                    "error_type": error_type,
                     "suggestions": suggestions
                 })
 
@@ -552,4 +562,5 @@ def health():
 
 if __name__ == "__main__":
     app.run(host='localhost', port=5000,debug=True)
+
     #app.run(debug=True)

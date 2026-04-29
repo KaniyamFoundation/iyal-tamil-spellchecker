@@ -887,14 +887,14 @@
 
       results.forEach(r => {
         if (!r.correct && !ignoredWords.has(r.word)) {
-          if (r.word.includes(' ')) multiWords.push({ word: r.word, suggestions: r.suggestions || [], type: 'spell' });
-          else replacersMap.set(r.word, { word: r.word, suggestions: r.suggestions || [], type: 'spell' });
+          if (r.word.includes(' ')) multiWords.push({ word: r.word, suggestions: r.suggestions || [], type: 'spell', error_type: r.error_type });
+          else replacersMap.set(r.word, { word: r.word, suggestions: r.suggestions || [], type: 'spell', error_type: r.error_type });
         }
       });
       grammarErrors.forEach(g => {
         if (!ignoredWords.has(g.word)) {
-          if (g.word.includes(' ')) multiWords.push({ word: g.word, suggestions: g.suggestions || [], type: 'grammar', message: g.message, shortMessage: g.shortMessage });
-          else replacersMap.set(g.word, { word: g.word, suggestions: g.suggestions || [], type: 'grammar', message: g.message, shortMessage: g.shortMessage });
+          if (g.word.includes(' ')) multiWords.push({ word: g.word, suggestions: g.suggestions || [], type: 'grammar', error_type: g.error_type, message: g.message, shortMessage: g.shortMessage });
+          else replacersMap.set(g.word, { word: g.word, suggestions: g.suggestions || [], type: 'grammar', error_type: g.error_type, message: g.message, shortMessage: g.shortMessage });
         }
       });
 
@@ -948,6 +948,16 @@
             span.className = matchedData.type === 'grammar' ? "grammar-error" : "misspelled";
             span.textContent = matchedData.word;
             span.dataset.suggestions = JSON.stringify(matchedData.suggestions);
+            if (matchedData.error_type) span.dataset.error_type = matchedData.error_type;
+            
+            let tooltip_msg = "";
+            if (matchedData.error_type === "colloquial") tooltip_msg = "பேச்சு வழக்கு: எழுத்துத் தமிழாக மாற்றவும்.";
+            else if (matchedData.error_type === "sandhi") tooltip_msg = "சந்திப் பிழை: சொல் பிணைப்பு சரிபார்க்கவும்.";
+            else if (matchedData.error_type === "grammar") tooltip_msg = "இலக்கணப் பிழை: வாக்கியப் பொருத்தம் சரிபார்க்கவும்.";
+            else if (matchedData.error_type === "blacklist") tooltip_msg = "தடைசெய்யப்பட்ட சொல்.";
+            else tooltip_msg = "எழுத்துப் பிழை (Spelling Mistake).";
+            
+            span.title = tooltip_msg;
             if (matchedData.message) span.dataset.message = matchedData.message;
             if (matchedData.shortMessage) span.dataset.shortMessage = matchedData.shortMessage;
             frag.appendChild(span);
@@ -1056,24 +1066,35 @@
         const suggestions = JSON.parse(target.dataset.suggestions || "[]");
         const message = target.dataset.message;
         const shortMessage = target.dataset.shortMessage;
+        const error_type = target.dataset.error_type;
 
         const menu = document.createElement("ul");
         menu.className = "context-menu";
         menu.style.top = `${e.pageY}px`;
         menu.style.left = `${e.pageX}px`;
 
-        if (shortMessage || message) {
+        let tooltip_msg = "";
+        if (error_type === "colloquial") tooltip_msg = "பேச்சு வழக்கு: முறையான எழுத்துத் தமிழாக மாற்றவும்.";
+        else if (error_type === "sandhi") tooltip_msg = "சந்திப் பிழை: சொல் பிணைப்பு சரிபார்க்கவும்.";
+        else if (error_type === "grammar") tooltip_msg = "இலக்கணப் பிழை: வாக்கியப் பொருத்தம் சரிபார்க்கவும்.";
+        else if (error_type === "blacklist") tooltip_msg = "தடைசெய்யப்பட்ட சொல்.";
+        else if (error_type === "spelling") tooltip_msg = "எழுத்துப் பிழை (Spelling Mistake).";
+
+        if (tooltip_msg || shortMessage || message) {
           const infoLi = document.createElement("li");
           infoLi.style.cursor = "default";
           infoLi.style.borderBottom = `1px solid var(--border)`;
           infoLi.style.backgroundColor = `var(--hover-bg)`;
+          infoLi.style.padding = "8px 12px";
 
           let html = "";
+          if (tooltip_msg) html += `<strong style="color: #ef4444; font-size: 14px; display: block; margin-bottom: 4px;">${tooltip_msg}</strong>`;
           if (shortMessage) html += `<strong style="color: var(--header-text); font-size: 14px;">${shortMessage}</strong><br/>`;
           if (message) html += `<span style="font-size: 13px; color: var(--text-muted); line-height: 1.4; display: block; margin-top: 4px;">${message}</span>`;
           infoLi.innerHTML = html;
           menu.appendChild(infoLi);
         }
+
 
         if (suggestions.length === 0) {
           const li = document.createElement("li");

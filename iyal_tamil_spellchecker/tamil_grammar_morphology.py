@@ -14,9 +14,35 @@ def get_derived_viku_variants(word):
     Strips common noun case suffixes and coordinating particles to identify potential roots.
     """
     possible_roots = []
+    # Grantha Consonant Suffix Stripping (ஷ், ஸ், ஜ், ஹ்)
+    # 1. Accusative (-ஐ e.g. சுரேஷை)
+    if word.endswith("ஷை") or word.endswith("ஸை") or word.endswith("ஜை") or word.endswith("ஹை"):
+        possible_roots.append(word[:-1] + "்")
     
+    # 2. Dative (-உக்கு e.g. சுரேஷுக்கு)
+    elif word.endswith("ஷுக்கு") or word.endswith("ஸுக்கு") or word.endswith("ஜுக்கு") or word.endswith("ஹுக்கு"):
+        possible_roots.append(word[:-5] + "்")
+        
+    # 3. Genitive (-இன் e.g. சுரேஷின்)
+    elif word.endswith("ஷின்") or word.endswith("ஸின்") or word.endswith("ஜின்") or word.endswith("ஹின்"):
+        possible_roots.append(word[:-3] + "்")
+        
+    # 4. Comitative (-ோடு e.g. சுரேஷோடு)
+    elif word.endswith("ஷோடு") or word.endswith("ஸோடு") or word.endswith("ஜோடு") or word.endswith("ஹோடு"):
+        possible_roots.append(word[:-3] + "்")
+        
+    # 5. Instrumental (-ஆல் e.g. சுரேஷால்)
+    elif word.endswith("ஷால்") or word.endswith("ஸால்") or word.endswith("ஜால்") or word.endswith("ஹால்"):
+        possible_roots.append(word[:-3] + "்")
+        
+    # 6. Ablative (-இலிருந்து e.g. சுரேஷிலிருந்து)
+    elif word.endswith("ஷிலிருந்து") or word.endswith("ஸிலிருந்து") or word.endswith("ஜிலிருந்து") or word.endswith("ஹிலிருந்து"):
+        possible_roots.append(word[:-9] + "்")
+
+
     # Suffix -உம் (e.g. 'ஹெலிகாப்டரும்')
-    if word.endswith("ும்"):
+    elif word.endswith("ும்"):
+
         possible_roots.append(word[:-2])
         if word.endswith("ரும்"): possible_roots.append(word[:-3] + "்")
         if word.endswith("லும்"): possible_roots.append(word[:-3] + "்")
@@ -26,31 +52,101 @@ def get_derived_viku_variants(word):
         if word.endswith("வும்"): possible_roots.append(word[:-3] + "வு")
     # Suffix -ஐ (e.g. 'ஹெலிகாப்டரை', 'புதுப்பொலிவை')
     elif word.endswith("ை"):
-        if word.endswith("ரை"): possible_roots.append(word[:-2] + "்")
-        if word.endswith("லை"): possible_roots.append(word[:-2] + "்")
-        if word.endswith("ளை"): possible_roots.append(word[:-2] + "்")
-        if word.endswith("னை"): possible_roots.append(word[:-2] + "்")
-        if word.endswith("வை"):
+        if word.endswith("களை"):
+            possible_roots.append(word[:-3])
+        elif word.endswith("யை"):
+            possible_roots.append(word[:-2])
+        elif word.endswith("ரை"): possible_roots.append(word[:-2] + "்")
+        elif word.endswith("லை"): possible_roots.append(word[:-2] + "்")
+        elif word.endswith("ளை"): possible_roots.append(word[:-2] + "்")
+        elif word.endswith("னை"): possible_roots.append(word[:-2] + "்")
+        elif word.endswith("வை"):
             possible_roots.append(word[:-2] + "வு")
             possible_roots.append(word[:-2])
-    # Suffix -க்கு / -உக்கு (e.g. 'ஹெலிகாப்டருக்கு')
-    elif word.endswith("ுக்கு"):
+
+    # Suffix -க்கு / -உக்கு (e.g. 'ஹெலிகாப்டருக்கு', 'அருட்கொடைக்கு')
+    elif word.endswith("க்கு"):
+
+        if word.endswith("களுக்கு"):
+            possible_roots.append(word[:-7])
         possible_roots.append(word[:-4])
         if word.endswith("ருக்கு"): possible_roots.append(word[:-5] + "்")
         if word.endswith("லுக்கு"): possible_roots.append(word[:-5] + "்")
         if word.endswith("ளுக்கு"): possible_roots.append(word[:-5] + "்")
         if word.endswith("னுக்கு"): possible_roots.append(word[:-5] + "்")
         if word.endswith("வுக்கு"): possible_roots.append(word[:-5] + "வு")
+
     # Suffix -இல் (e.g. 'ஹெலிகாப்டரில்')
     elif word.endswith("ில்"):
+        if word.endswith("களில்"):
+            possible_roots.append(word[:-5])
         if word.endswith("ரில்"): possible_roots.append(word[:-3] + "்")
         if word.endswith("லில்"): possible_roots.append(word[:-3] + "்")
         if word.endswith("ளில்"): possible_roots.append(word[:-3] + "்")
         if word.endswith("னில்"): possible_roots.append(word[:-3] + "்")
         if word.endswith("வில்"): possible_roots.append(word[:-3] + "வு")
+
+    # Suffix -ஆல் (Instrumental Case)
+    elif word.endswith("ஆல்") or word.endswith("னால்"):
+        if word.endswith("களினால்"):
+            possible_roots.append(word[:-7])
+        elif word.endswith("யினால்"):
+            possible_roots.append(word[:-6])
+        elif word.endswith("களால்"):
+            possible_roots.append(word[:-5])
+        else:
+            possible_roots.append(word[:-3])
+
+    # Suffix -இருந்து / -இலிருந்து (Ablative Case)
+    elif word.endswith("இருந்து") or word.endswith("ருந்து"):
+        if word.endswith("களிலிருந்து"):
+
+            possible_roots.append(word[:-11])
+        elif word.endswith("யிலிருந்து"):
+            possible_roots.append(word[:-10])
+        elif word.endswith("இலிருந்து"):
+            possible_roots.append(word[:-9])
+        else:
+            possible_roots.append(word[:-7])
+
+
+    # Suffix -ஆக / -ஆகவே
+    elif word.endswith("ாகவே") or word.endswith("யாகவே"):
+        possible_roots.append(word[:-4] + "்")
+        possible_roots.append(word[:-4])
+    elif word.endswith("ாக") or word.endswith("யாக"):
+        possible_roots.append(word[:-2] + "்")
+        possible_roots.append(word[:-2])
+
+
+    # Suffix -இன் / -உடைய (Genitive Case)
+
+    elif word.endswith("இன்") or word.endswith("ன்") or word.endswith("உடைய"):
+        if word.endswith("களுடைய"):
+            possible_roots.append(word[:-6])
+        elif word.endswith("உடைய"):
+            possible_roots.append(word[:-4])
+        elif word.endswith("களின்"):
+            possible_roots.append(word[:-5])
+        elif word.endswith("யின்"):
+            possible_roots.append(word[:-4])
+        else:
+            possible_roots.append(word[:-3])
+
+
+
+    # Suffix -ோடு / -ஒடு (Comitative Case)
+    elif word.endswith("ோடு") or word.endswith("ஒடு"):
+        if word.endswith("களோடு"):
+            possible_roots.append(word[:-5])
+        elif word.endswith("யோடு"):
+            possible_roots.append(word[:-4])
+
     # Suffix -கள் (Plural)
     elif word.endswith("கள்"):
         possible_roots.append(word[:-3])
+
+
 
     return possible_roots
 
