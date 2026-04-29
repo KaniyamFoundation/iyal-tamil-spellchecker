@@ -22,7 +22,8 @@ The `/spellcheck` route now follows a multi-stage validation process:
 To provide total control over the spellchecker and allow for scalable management of custom terms, a multi-line folder structure is used:
 - **Location**: `TamilinaiyaVaaniSpellcheckerPy/data/user_config/`
 - **Files**:
-    - `rightwordlist.txt`: The primary dictionary layer. Words added here act universally across both the fast web-router AND the deep morphologial engine.
+    - `rightwordlist.txt`: The primary dictionary layer. Words added here act universally across both the fast web-router AND the deep morphological engine. 
+        *(Note: You only need to add the single root word (e.g., `சொல்லமுதை`). The engine automatically validates variants ending in all 4 sandhi consonants: `க், ச், த், ப்` (e.g., `சொல்லமுதைப்`). This rule applies identically to all core dictionary words in the **Bloom Filter** as well!)*
     - `wrongwordlist.txt`: List of fragments or words to always mark as **Wrong** (one per line).
     - `replacements.txt`: List of mappings to enforce preferred vocabulary (format: `original|suggestion`).
 

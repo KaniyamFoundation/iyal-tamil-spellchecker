@@ -16,3 +16,16 @@
 * DONE வரலாறே - wrong suggestion  
 * DONE செய்ய - has wrong suggestions
 * DONE வண்ணமேற்றி - has wrong suggestions
+* DONE  மறுவாக்குப்பதிவு has wrong suggestions.
+* DONE ராஜியாக has wrong suggestions.
+* DONE இராம்குமார் has wrong suggestions.
+* DONE ஸ்ரீகாந்துக்கும் - has wrong suggestions
+* DONE வெளி யிட்டுள்ளது should be வெளியிட்டுள்ளது 
+* DONE தலைப்புக்களே gave many suggestions. this is correct word 
+* DONE இம்மடல்கள் is correct word but it gave many suggestions
+* DONE உணர்ந்து - shown as error word.
+* DONE  உள்ளது - shown as error word.
+* DONE அசலான shown as error word.
+
+
+* 

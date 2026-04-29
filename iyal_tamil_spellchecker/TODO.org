@@ -59,3 +59,10 @@ CLOSED: [2026-04-28 Tue 14:19]
 CLOSED: [2026-04-28 Tue 13:38]
 * TODO Build a "Modern Python" migration script to add type hinting throughout the engine
 * TODO Develop an automated "Iyal-Upgrade" CLI tool for self-hosted instances
+
+* TODO Implement Production Scaling and Performance Optimizations for Large Documents
+  - [ ] Migrate to Process-Based Concurrency (Deploy via Gunicorn/uWSGI utilizing pre-fork models `-w 4 -k gevent`)
+  - [ ] Integrate Asynchronous Job Queues (Celery/RQ) to defer synchronous evaluation bounds for massive payloads
+  - [ ] Shift in-memory evaluation states into centralized distributed cache instances (Redis)
+  - [ ] Partition heavy multiline sequences directly via native Python ProcessPoolExecutor maps
+- TODO Ctrl Z for undo - if the user changes and wants to go back to the previous state

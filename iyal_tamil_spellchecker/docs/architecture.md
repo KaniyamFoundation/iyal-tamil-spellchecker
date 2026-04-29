@@ -23,11 +23,13 @@ The system is designed as a **Priority-Based Hybrid Validation Pipeline** that b
        |
        +--- 2. L1 CACHE (Bloom Filter: Instant Dictionary Check)
        |
-       +--- 3. L2 CONTEXT (Bigram DB: Ranking & Grammar Shadow Match)
+       +--- 3. L1.5 MORPHOLOGY (tamil_grammar_morphology.py: Sandhi, Suffix-Stripping, Split Word Merging)
        |
-       +--- 4. L3 ENGINE (Vaani: Morphological Rule-Check & Sandhi)
+       +--- 4. L2 CONTEXT (Bigram DB: Ranking & Grammar Shadow Match)
        |
-       +--- 5. L4 FALLBACK (BK-Tree: Context-Weighted Similarity Search)
+       +--- 5. L3 ENGINE (Vaani: Morphological Rule-Check)
+       |
+       +--- 6. L4 FALLBACK (BK-Tree: Context-Weighted Similarity Search)
        |
        v
 [ JSON RESPONSE ] --> (X-Process-Time Header) --> (UI Highlight)

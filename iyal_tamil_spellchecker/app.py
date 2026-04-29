@@ -23,6 +23,7 @@ from flask_compress import Compress
 from flasgger import Swagger
 import concurrent.futures
 from TamilinaiyaVaaniSpellcheckerPy import TamilinaiyaVaaniData, TamilinaiyaVaaniSpellchecker
+import tamil_grammar_morphology
 
 
 # ---------------------- Configuration ----------------------
@@ -309,22 +310,7 @@ def process_single_text(text):
         }, 413
     
     # 1. First, scan for Spacing Errors (Missing space after dot)
-    # Pattern: Long Tamil word + dot + Tamil word (e.g., பதிவாகியுள்ளன.இதுகுறித்து)
-    # We ignore short parts (1-4 chars) to allow initials like எஸ்.ஐ.ஆர்
-    results = []
-    spacing_matches = list(regex.finditer(r"(\p{Tamil}{5,})\.(\p{Tamil}+)", text))
-    for match in spacing_matches:
-        full_match = match.group(0)
-        pre = match.group(1)
-        post = match.group(2)
-        
-        results.append({
-            "word": full_match,
-            "correct": False,
-            "suggestions": [pre + ". " + post],
-            "type": "grammar",
-            "message": "முற்றுப்புள்ளிக்குப் பின் இடைவெளி தேவை (Missing space after period)"
-        })
+    results = tamil_grammar_morphology.find_spacing_errors(text)
 
     # 2. Extract and check individual words
     words = regex.findall(r"\p{Tamil}+", text)
@@ -357,7 +343,7 @@ def process_single_text(text):
 
     # Start the grammar check concurrently while we process the BK Tree local spelling
     with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future_grammar = executor.submit(fetch_lt_grammar, text)
+        future_grammar = executor.submit(tamil_grammar_morphology.fetch_lt_grammar, text)
 
         # Get suggestions from TamilinaiyaVaani if available
         vaani_results_map = {}
@@ -389,12 +375,20 @@ def process_single_text(text):
                 if word in res.bloom:
                     is_correct = True
                 
-                # 2. If not in Bloom, check if it's a valid word ending in a sandhi consonant (க, ச, த, ப + ்)
-                # This fixes words like 'ஆயுதமாகிப்' (where 'ஆயுதமாகி' is valid).
-                if not is_correct and regex.search(r'[கசதப]்$', word):
-                    base_word = word[:-2]
-                    if base_word in res.bloom or (res.vaani and res.vaani.checkword(base_word, 0)):
-                        is_correct = True
+                # 2. Check for trailing sandhi consonants (க, ச, த, ப + ்)
+                if not is_correct:
+                    base_sandhi = tamil_grammar_morphology.get_base_sandhi_word(word)
+                    if base_sandhi:
+                        if base_sandhi in res.bloom or base_sandhi in res.whitelist or (res.vaani and res.vaani.checkword(base_sandhi, 0)):
+                            is_correct = True
+                
+                # 2.5. Check derived words of valid roots (Noun Case Endings / Coordinating Suffixes)
+                if not is_correct:
+                    possible_roots = tamil_grammar_morphology.get_derived_viku_variants(word)
+                    for r_word in possible_roots:
+                        if r_word in res.bloom or r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
+                            is_correct = True
+                            break
                 
                 # 3. If not in Bloom and not sandhi-stripped, consult Vaani
                 if not is_correct and res.vaani:
@@ -405,6 +399,11 @@ def process_single_text(text):
                         else:
                             if v_res[1] and v_res[1] != "wrong":
                                 suggestions = v_res[1].split(",")
+            
+                if not is_correct and prev_word:
+                    combined = prev_word + word
+                    if combined in res.bloom or combined in res.whitelist or (res.vaani and res.vaani.checkword(combined, 0)):
+                        suggestions.insert(0, combined)
             
             # Fallback to BK-tree if no suggestions from Vaani and it's still wrong
             if not is_correct:
@@ -552,5 +551,5 @@ def health():
     return "OK", 200
 
 if __name__ == "__main__":
-    app.run(host='localhost', port=5001,debug=True)
+    app.run(host='localhost', port=5000,debug=True)
     #app.run(debug=True)

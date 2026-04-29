@@ -2,6 +2,13 @@
 
 All notable changes to the Iyal Tamil Spellchecker project will be documented in this file.
 
+## [0.0.4] - 2026-04-29
+
+### Added
+- **Morphology Isolation Layer (`tamil_grammar_morphology.py`)**: Decoupled high-level grammar boundaries, trailing sandhi mappings, and coordinate particles completely out of the web framework controller for distinct testing.
+- **Suffix Case Stripping**: Implemented automated reverse-sandhi bounds allowing noun derivation parameters (`-உம்`, `-ஐ`, `-க்கு`, `-இல்`, `-கள்`) to pass flawlessly referencing simple roots.
+- **Split-Phrase Recombination**: Configured look-behind tracking automatically suggesting fused corrections for broken whitespace words (e.g. `வெளி யிட்டுள்ளது` -> `வெளியிட்டுள்ளது`).
+
 ## [0.0.3] - 2026-04-28
 - **RESTful API Versioning (v1)**: Implemented side-by-side mapping for all core endpoints (e.g., `/v1/spellcheck`), ensuring backward compatibility for older clients while allowing for breaking changes in the future.
 - **Batch Processing Support**: Extended the spellcheck API to natively handle both single strings and JSON lists (batch mode), improving throughput for bulk text processing.
