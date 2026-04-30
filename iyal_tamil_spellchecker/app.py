@@ -248,7 +248,7 @@ def get_cached_remote_version():
 
 @app.route("/")
 def index():
-    #version = "0.0.3"
+    version = "0.0.5"
     try:
         with open("version.txt", "r", encoding="utf-8") as f:
             version = f.read().strip()
@@ -355,13 +355,16 @@ def process_single_text(text):
     results = tamil_grammar_morphology.find_spacing_errors(text)
 
     # 2. Extract and check individual words
-    words = regex.findall(r"\p{Tamil}+", text)
+    # Extract words including invisible joining characters (ZWJ/ZWNJ)
+    words = regex.findall(r"[\p{Tamil}\u200C\u200D]+", text)
 
     seen = set()
     local_corrections = 0
     local_no_suggestions = 0
-    def fetch_lt_grammar(text):
-        grammar_errors = []
+    
+    # Pre-fetch LanguageTool grammar results if applicable
+    grammar_errors = []
+    if len(text) > 5:
         try:
             #Check with local LanguageTool server
             data = urllib.parse.urlencode({'language': 'ta', 'text': text}).encode('utf-8')
@@ -383,206 +386,203 @@ def process_single_text(text):
 
         except Exception as e:
             print("LanguageTool API error:", e)
-        return grammar_errors
 
-    # Start the grammar check concurrently while we process the BK Tree local spelling
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-        future_grammar = executor.submit(tamil_grammar_morphology.fetch_lt_grammar, text)
+    # Get suggestions from TamilinaiyaVaani if available
+    vaani_results_map = {}
+    if res.vaani:
+        vaani_parinthu = res.vaani.validate_words(words)
+        vaani_results_map = {words[i]: vaani_parinthu[i] for i in range(len(words))}
 
-        # Get suggestions from TamilinaiyaVaani if available
-        vaani_results_map = {}
-        if res.vaani:
-            vaani_parinthu = res.vaani.validate_words(words)
-            vaani_results_map = {words[i]: vaani_parinthu[i] for i in range(len(words))}
-
-        prev_word = None
-        for word in words:
-            if word in seen:
-                # We still need to update prev_word to maintain context for the NEXT word
-                prev_word = word
-                continue
-            seen.add(word)
-            
+    prev_word = None
+    for i in range(len(words)):
+        original_word = words[i]
+        if original_word in seen:
+            # We still need to update prev_word to maintain context for the NEXT word
+            prev_word = original_word
+            continue
+        seen.add(original_word)
+        
+        # Strip invisible characters for dictionary/morphology lookup
+        word = original_word.replace('\u200c', '').replace('\u200d', '')
+        
+        is_correct = False
+        suggestions = []
+        error_type = "spelling"
+        
+        # 0. Check Custom Dictionary Overrides
+        if word in res.blacklist:
             is_correct = False
-            suggestions = []
-            error_type = "spelling"
-            
-            # 0. Check Custom Dictionary Overrides
-            if word in res.blacklist:
-                is_correct = False
-                error_type = "blacklist"
-            elif word in res.replacements:
-                is_correct = False
-                suggestions = res.replacements[word]
-                error_type = "colloquial"
-            elif word in res.whitelist:
+            error_type = "blacklist"
+        elif word in res.replacements:
+            is_correct = False
+            suggestions = res.replacements[word]
+            error_type = "colloquial"
+        elif word in res.whitelist:
+            is_correct = True
+
+        else:
+            # 1. Check Bloom filter for speed
+            if word in res.bloom:
                 is_correct = True
-
-            else:
-                # 1. Check Bloom filter for speed
-                if word in res.bloom:
-                    is_correct = True
-                
-                # 2. Check for trailing sandhi consonants (க, ச, த, ப + ்)
-                if not is_correct:
-                    base_sandhi = tamil_grammar_morphology.get_base_sandhi_word(word)
-                    if base_sandhi:
-                        if base_sandhi in res.bloom or base_sandhi in res.whitelist or (res.vaani and res.vaani.checkword(base_sandhi, 0)):
-                            is_correct = True
-                        else:
-                            # Check if the sandhi-stripped word is a derived variant
-                            possible_roots = tamil_grammar_morphology.get_derived_viku_variants(base_sandhi)
-                            for r_word in possible_roots:
-                                if r_word in res.bloom or r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
-                                    is_correct = True
-                                    break
-
-                
-                # 2.5. Check derived words of valid roots (Noun Case Endings / Coordinating Suffixes)
-                if not is_correct:
-                    possible_roots = tamil_grammar_morphology.get_derived_viku_variants(word)
-                    for r_word in possible_roots:
-                        # Stricter validation for very short roots (likely syllables/noise in Bloom)
-                        if len(r_word) <= 2:
-                            if r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
-                                is_correct = True
-                                break
-                        else:
+            
+            # 2. Check for trailing sandhi consonants (க, ச, த, ப + ்)
+            if not is_correct:
+                base_sandhi = tamil_grammar_morphology.get_base_sandhi_word(word)
+                if base_sandhi:
+                    if base_sandhi in res.bloom or base_sandhi in res.whitelist or (res.vaani and res.vaani.checkword(base_sandhi, 0)):
+                        is_correct = True
+                    else:
+                        # Check if the sandhi-stripped word is a derived variant
+                        possible_roots = tamil_grammar_morphology.get_derived_viku_variants(base_sandhi)
+                        for r_word in possible_roots:
                             if r_word in res.bloom or r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
                                 is_correct = True
                                 break
-                
-                # 3. If not in Bloom and not sandhi-stripped, consult Vaani
-                if not is_correct and res.vaani:
-                    v_res = vaani_results_map.get(word)
-                    if v_res:
-                        if v_res[1] == "correct":
-                            is_correct = True
-                        else:
-                            if v_res[1] and v_res[1] != "wrong":
-                                suggestions = v_res[1].split(",")
+
             
-                if not is_correct and prev_word:
-                    combined = prev_word + word
-                    if combined in res.bloom or combined in res.whitelist or (res.vaani and res.vaani.checkword(combined, 0)):
-                        suggestions.insert(0, combined)
-                        error_type = "sandhi"
-            
-            # Fallback to BK-tree if no suggestions from Vaani and it's still wrong
+            # 2.5. Check derived words of valid roots (Noun Case Endings / Coordinating Suffixes)
             if not is_correct:
-                bk_sugs = suggest_word(word, prev_word=prev_word)
-                if not suggestions:
-                    suggestions = bk_sugs
-                    if not suggestions:
-                        log_event("misses", f"{word}")
-                        local_no_suggestions += 1
-                elif bk_sugs:
-                    # Append unique bk-tree suggestions
-                    suggestions.extend([s for s in bk_sugs if s not in suggestions])
+                possible_roots = tamil_grammar_morphology.get_derived_viku_variants(word)
+                for r_word in possible_roots:
+                    # Stricter validation for very short roots (likely syllables/noise in Bloom)
+                    if len(r_word) <= 2:
+                        if r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
+                            is_correct = True
+                            break
+                    else:
+                        if r_word in res.bloom or r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
+                            is_correct = True
+                            break
             
-            # Clean up suggestions: remove the word itself and maintain uniqueness
-            if not is_correct and suggestions:
-                unique_sugs = []
-                for s in suggestions:
-                    s_clean = s.strip()
-                    if s_clean and s_clean != word and s_clean not in unique_sugs:
-                        unique_sugs.append(s_clean)
-                
-                # Smart Heuristic: If we have legitimate typo corrections (no spaces),
-                # drop the split suggestions (contain spaces) to prevent nonsensical splits.
-                non_splits = [s for s in unique_sugs if " " not in s]
-                splits = [s for s in unique_sugs if " " in s]
-                
-                if non_splits and error_type != "colloquial":
-                    suggestions = non_splits[:5]
-                else:
-                    suggestions = (splits + non_splits)[:5]
-
+            # 3. If not in Bloom and not sandhi-stripped, consult Vaani
+            if not is_correct and res.vaani:
+                v_res = vaani_results_map.get(word)
+                if v_res:
+                    if v_res[1] == "correct":
+                        is_correct = True
+                    else:
+                        if v_res[1] and v_res[1] != "wrong":
+                            suggestions = v_res[1].split(",")
+        
+            if not is_correct and prev_word:
+                combined = prev_word + word
+                if combined in res.bloom or combined in res.whitelist or (res.vaani and res.vaani.checkword(combined, 0)):
+                    suggestions.insert(0, combined)
                     error_type = "sandhi"
-
+        
+        # Fallback to BK-tree if no suggestions from Vaani and it's still wrong
+        if not is_correct:
+            bk_sugs = suggest_word(word, prev_word=prev_word)
+            if not suggestions:
+                suggestions = bk_sugs
+                if not suggestions:
+                    log_event("misses", f"{word}")
+                    local_no_suggestions += 1
+            elif bk_sugs:
+                # Append unique bk-tree suggestions
+                suggestions.extend([s for s in bk_sugs if s not in suggestions])
+        
+        # Clean up suggestions: remove the word itself and maintain uniqueness
+        if not is_correct and suggestions:
+            unique_sugs = []
+            for s in suggestions:
+                s_clean = s.strip()
+                if s_clean and s_clean != word and s_clean not in unique_sugs:
+                    unique_sugs.append(s_clean)
             
-            # 3. Contextual Grammar Refinement (N-Gram checking for correctly spelled but contextually wrong words)
-            # This catches errors like "அவன் வந்தாள்" (should be வந்தான்)
-            if False and is_correct and prev_word and res.bigrams:
-                try:
-                    cursor = res.bigrams.cursor()
-                    # Current frequency
-                    cursor.execute("SELECT freq FROM bigrams WHERE word1=? AND word2=?", (prev_word, word))
-                    row = cursor.fetchone()
-                    current_freq = row[0] if row else 0
-                    
-                    # Only investigate if current connection is weak/missing
-                    if current_freq < 2:
-                        # Find morphological "neighbors" (edit distance 1 or 2)
-                        neighbors = res.bk_tree.find(word, 2)
-                        better_matches = []
-                        
-                        for dist, neighbor in neighbors:
-                            if neighbor == word: continue
-                            
-                            # Check if the neighbor has a strong connection to prev_word
-                            cursor.execute("SELECT freq FROM bigrams WHERE word1=? AND word2=?", (prev_word, neighbor))
-                            n_row = cursor.fetchone()
-                            n_freq = n_row[0] if n_row else 0
-                            
-                            # If a neighbor is significantly more likely (e.g., freq > 10), it's probably what the user meant
-                            if n_freq > 10: 
-                                better_matches.append((neighbor, n_freq))
-                        
-                        if better_matches:
-                            # We found a legitimate grammar mismatch!
-                            is_correct = False
-                            # Sort by frequency and add to suggestions
-                            better_matches.sort(key=lambda x: x[1], reverse=True)
-                            suggestions = [m[0] for m in better_matches] + suggestions
-                            # Uniqueness
-                            suggestions = list(dict.fromkeys(suggestions))
-                except Exception as e:
-                    print(f"Grammar refinement error: {e}")
-
-            # 4. Rule-Based Pronominal Agreement (Fallback for sparse N-grams)
-            if is_correct and prev_word in PRONOUN_AGREEMENT:
-                expected_suffix = PRONOUN_AGREEMENT[prev_word]
-                # If current word looks like a verb (ends in common verb endings) but doesn't match the pronoun
-                # common_verb_endings = ["ான்", "ாள்", "ார்", "து", "ேன்", "ோம்", "ாய்", "ீர்கள்", "ார்கள்", "ன"]
-                verb_endings = list(PRONOUN_AGREEMENT.values())
-                
-                current_suffix = None
-                for ve in verb_endings:
-                    if word.endswith(ve):
-                        current_suffix = ve
-                        break
-                
-                if current_suffix and current_suffix != expected_suffix:
-                    # Mismatch found! e.g. "அவர்கள்" followed by something ending in "ான்"
-                    is_correct = False
-                    error_type = "grammar"
-                    # Generate the correct version by swapping suffixes
-                    root = word[:-len(current_suffix)]
-                    correct_form = root + expected_suffix
-                    # Verify if the generated form is actually a word
-                    if correct_form in res.bloom or (res.vaani and res.vaani.checkword(correct_form, 0)):
-                        suggestions = [correct_form] + suggestions
-                    
-            # Update context for next word
-            prev_word = word
+            # Smart Heuristic: If we have legitimate typo corrections (no spaces),
+            # drop the split suggestions (contain spaces) to prevent nonsensical splits.
+            non_splits = [s for s in unique_sugs if " " not in s]
+            splits = [s for s in unique_sugs if " " in s]
             
-            if is_correct:
-                results.append({"word": word, "correct": True})
+            if non_splits and error_type != "colloquial":
+                suggestions = non_splits[:5]
             else:
-                local_corrections += 1
-                results.append({
-                    "word": word,
-                    "correct": False,
-                    "error_type": error_type,
-                    "suggestions": suggestions
-                })
+                suggestions = (splits + non_splits)[:5]
 
-        grammar_errors = future_grammar.result()
+                error_type = "sandhi"
+
+        
+        # 3. Contextual Grammar Refinement (N-Gram checking for correctly spelled but contextually wrong words)
+        # This catches errors like "அவன் வந்தாள்" (should be வந்தான்)
+        if False and is_correct and prev_word and res.bigrams:
+            try:
+                cursor = res.bigrams.cursor()
+                # Current frequency
+                cursor.execute("SELECT freq FROM bigrams WHERE word1=? AND word2=?", (prev_word, word))
+                row = cursor.fetchone()
+                current_freq = row[0] if row else 0
+                
+                # Only investigate if current connection is weak/missing
+                if current_freq < 2:
+                    # Find morphological "neighbors" (edit distance 1 or 2)
+                    neighbors = res.bk_tree.find(word, 2)
+                    better_matches = []
+                    
+                    for dist, neighbor in neighbors:
+                        if neighbor == word: continue
+                        
+                        # Check if the neighbor has a strong connection to prev_word
+                        cursor.execute("SELECT freq FROM bigrams WHERE word1=? AND word2=?", (prev_word, neighbor))
+                        n_row = cursor.fetchone()
+                        n_freq = n_row[0] if n_row else 0
+                        
+                        # If a neighbor is significantly more likely (e.g., freq > 10), it's probably what the user meant
+                        if n_freq > 10: 
+                            better_matches.append((neighbor, n_freq))
+                    
+                    if better_matches:
+                        # We found a legitimate grammar mismatch!
+                        is_correct = False
+                        # Sort by frequency and add to suggestions
+                        better_matches.sort(key=lambda x: x[1], reverse=True)
+                        suggestions = [m[0] for m in better_matches] + suggestions
+                        # Uniqueness
+                        suggestions = list(dict.fromkeys(suggestions))
+            except Exception as e:
+                print(f"Grammar refinement error: {e}")
+
+        # 4. Rule-Based Pronominal Agreement (Fallback for sparse N-grams)
+        if is_correct and prev_word in PRONOUN_AGREEMENT:
+            expected_suffix = PRONOUN_AGREEMENT[prev_word]
+            # If current word looks like a verb (ends in common verb endings) but doesn't match the pronoun
+            # common_verb_endings = ["ான்", "ாள்", "ார்", "து", "ேன்", "ோம்", "ாய்", "ீர்கள்", "ார்கள்", "ன"]
+            verb_endings = list(PRONOUN_AGREEMENT.values())
+            
+            current_suffix = None
+            for ve in verb_endings:
+                if word.endswith(ve):
+                    current_suffix = ve
+                    break
+            
+            if current_suffix and current_suffix != expected_suffix:
+                # Mismatch found! e.g. "அவர்கள்" followed by something ending in "ான்"
+                is_correct = False
+                error_type = "grammar"
+                # Generate the correct version by swapping suffixes
+                root = word[:-len(current_suffix)]
+                correct_form = root + expected_suffix
+                # Verify if the generated form is actually a word
+                if correct_form in res.bloom or (res.vaani and res.vaani.checkword(correct_form, 0)):
+                    suggestions = [correct_form] + suggestions
+                
+        # Update context for next word
+        prev_word = original_word
+        
+        if is_correct:
+            results.append({"word": original_word, "correct": True})
+        else:
+            local_corrections += 1
+            results.append({
+                "word": original_word,
+                "correct": is_correct,
+                "suggestions": suggestions[:8] if not is_correct else [],
+                "error_type": error_type if not is_correct else None
+            })
 
    # Update persistent metrics
     with metrics_lock:
-            # Update and save metrics
+        # Update and save metrics
         metrics_store["total_words"] += len(words)
         metrics_store["corrections"] += local_corrections
         metrics_store["no_suggestions"] += local_no_suggestions

@@ -68,3 +68,5 @@ CLOSED: [2026-04-28 Tue 13:38]
   - [ ] Partition heavy multiline sequences directly via native Python ProcessPoolExecutor maps
 - DONE Ctrl Z for undo - if the user changes and wants to go back to the previous state 
 CLOSED: [2026-04-29 Wed 20:22]
+* TODO move the static version number in app.py to version.txt
+* TODO if the version is same as the latest relese, then show the message.txt content
