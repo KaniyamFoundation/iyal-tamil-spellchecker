@@ -1,8 +1,12 @@
 bloom_filter2
 flask
+flask-cors
+flask-limiter
+flasgger
+flask-compress
 regex
 pybktree
 Levenshtein
 mmh3
 tqdm
-flask-cors
+pytest
