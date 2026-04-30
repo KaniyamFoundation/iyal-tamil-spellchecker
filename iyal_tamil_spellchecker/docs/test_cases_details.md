@@ -83,6 +83,9 @@ Captures historical failures and specific user-reported bugs to prevent regressi
 *   **`test_todangumpothu_replacement`**: Verifies that intentional space overrides in `replacements.txt` take precedence over dictionary matches.
 *   **`test_ennamanathu_correct`**: Ensures `எண்ணமானது` is correctly validated.
 *   **`test_eastwoodtai_correct`**: Confirms that `ஈஸ்ட்வுட்டை` (and other loan word derivations) resolve correctly via the morphology engine.
+*   **`test_plural_forms_correct`**: Validates complex plural forms like `பூக்கள்`, `பழங்கள்`, and `கற்கள்`.
+*   **`test_suffix_fragments_rejected`**: Ensures standalone fragments (e.g., `ழைகள்`, `க்கள்`) are correctly blacklisted and rejected.
+*   **`test_split_word_error_recognition`**: Confirms that splitting a valid word (e.g., `பி ழைகள்`) correctly flags the resulting fragments as errors.
 
 ### 4. Version & Update Logic
 **File:** `test_version_check.py`

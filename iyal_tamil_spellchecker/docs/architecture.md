@@ -164,5 +164,8 @@ Currently, the application is optimized for local/internal use. For public deplo
 ### 3. API & Ecosystem
 *   **Developer SDK**: Provide automated API documentation using **Flasgger/Swagger** at `/apidocs/`.
 *   **API Versioning**: Implemented `/v1/` route mapping for future-proof integration.
+*   **Morphological Precision**:
+    *   **Strict Short Root Validation**: Implemented a mandatory Vaani/Whitelist check for morphological roots <= 2 characters to bypass potential Bloom filter noise.
+    *   **Suffix Blacklisting**: Comprehensive blacklist for standalone grammatical fragments (e.g., `ழைகள்`, `க்கள்`, `த்து`) to prevent false positives when words are split.
 *   **Instrumentation**: Real-time server-side latency tracking via `X-Process-Time` headers.
 *   **Internet Security**: Implement full payload sanitization and IP-based rate limiting via `Flask-Limiter`.

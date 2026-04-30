@@ -189,6 +189,14 @@ def get_derived_viku_variants(word):
 
     # Suffix -கள் (Plural)
     elif word.endswith("கள்"):
+        if word.endswith("க்கள்"):
+            possible_roots.append(word[:-5])
+        if word.endswith("ங்கள்"):
+            possible_roots.append(word[:-5] + "ம்")
+        if word.endswith("ற்கள்"):
+            possible_roots.append(word[:-5] + "ல்")
+        if word.endswith("ட்கள்"):
+            possible_roots.append(word[:-5] + "ள்")
         possible_roots.append(word[:-3])
 
 

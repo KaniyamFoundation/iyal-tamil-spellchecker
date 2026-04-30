@@ -442,9 +442,15 @@ def process_single_text(text):
                 if not is_correct:
                     possible_roots = tamil_grammar_morphology.get_derived_viku_variants(word)
                     for r_word in possible_roots:
-                        if r_word in res.bloom or r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
-                            is_correct = True
-                            break
+                        # Stricter validation for very short roots (likely syllables/noise in Bloom)
+                        if len(r_word) <= 2:
+                            if r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
+                                is_correct = True
+                                break
+                        else:
+                            if r_word in res.bloom or r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
+                                is_correct = True
+                                break
                 
                 # 3. If not in Bloom and not sandhi-stripped, consult Vaani
                 if not is_correct and res.vaani:

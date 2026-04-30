@@ -102,3 +102,37 @@ def test_eastwoodtai_correct(client):
     response = client.post('/v1/spellcheck', json={"text": "ஈஸ்ட்வுட்டை"})
     data = json.loads(response.data)
     assert data["results"][0]["correct"] is True
+
+@pytest.mark.parametrize("word", [
+    "பூக்கள்", "பழங்கள்", "கற்கள்", "முட்கள்", "ஈக்கள்", "நாட்கள்"
+])
+def test_plural_forms_correct(client, word):
+    """Verify that complex plural forms are correctly identified as valid."""
+    import app
+    app.res = load_resources()
+    response = client.post('/v1/spellcheck', json={"text": word})
+    data = json.loads(response.data)
+    assert data["results"][0]["correct"] is True
+
+@pytest.mark.parametrize("fragment", [
+    "ழைகள்", "க்கள்", "ங்கள்", "களின்", "களால்", "ச்சு", "த்து", "ப்பு", "க்கு"
+])
+def test_suffix_fragments_rejected(client, fragment):
+    """Verify that standalone suffix fragments are flagged as errors."""
+    import app
+    app.res = load_resources()
+    response = client.post('/v1/spellcheck', json={"text": fragment})
+    data = json.loads(response.data)
+    assert data["results"][0]["correct"] is False
+    assert data["results"][0]["error_type"] == "blacklist"
+
+def test_split_word_error_recognition(client):
+    """Verify that splitting a valid word results in flagged errors for fragments."""
+    import app
+    app.res = load_resources()
+    # Split பிழைகள் to பி ழைகள்
+    response = client.post('/v1/spellcheck', json={"text": "பி ழைகள்"})
+    data = json.loads(response.data)
+    # ழைகள் should be an error
+    error_found = any(r["word"] == "ழைகள்" and r["correct"] is False for r in data["results"])
+    assert error_found is True

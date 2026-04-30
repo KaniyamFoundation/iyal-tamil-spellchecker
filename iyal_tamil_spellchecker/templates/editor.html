@@ -769,15 +769,18 @@
     // --- Undo/Redo State Manager ---
     const undoStack = [];
     const redoStack = [];
-    const maxStackSize = 3; // Allowing 2 explicit states + current state
+    const maxStackSize = 5; // Allow 5 levels of undo
 
 
     function saveState() {
       const editor = document.getElementById('editor');
       if (!editor) return;
-      const state = editor.innerHTML;
-      if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== state) {
-        undoStack.push(state);
+      
+      const html = editor.innerHTML;
+      const text = editor.textContent; // Compare raw text to ignore automatic highlights
+
+      if (undoStack.length === 0 || undoStack[undoStack.length - 1].text !== text) {
+        undoStack.push({ html, text });
         if (undoStack.length > maxStackSize) {
           undoStack.shift();
         }
@@ -1191,13 +1194,14 @@
 
       if (isUndo) {
         e.preventDefault();
+        saveState(); 
         if (undoStack.length > 1) {
           redoStack.push(undoStack.pop()); 
           const prevState = undoStack[undoStack.length - 1];
           const editor = document.getElementById('editor');
           
           const caretOffset = saveCaretPosition(editor);
-          editor.innerHTML = prevState;
+          editor.innerHTML = prevState.html;
           restoreCaretPosition(editor, caretOffset);
           
           walkAndSpellcheck();
@@ -1210,7 +1214,7 @@
           const editor = document.getElementById('editor');
           
           const caretOffset = saveCaretPosition(editor);
-          editor.innerHTML = nextState;
+          editor.innerHTML = nextState.html;
           restoreCaretPosition(editor, caretOffset);
           
           walkAndSpellcheck();
@@ -1222,7 +1226,11 @@
       }
     });
 
+    let saveStateTimer = null;
     document.getElementById('editor').addEventListener('input', () => {
+      // Auto-save state after 1 second of inactivity if no explicit checkpoint was made
+      clearTimeout(saveStateTimer);
+      saveStateTimer = setTimeout(() => saveState(), 1000);
 
       const topStatus = document.getElementById('topStatus');
       topStatus.classList.remove('flashing-red');
