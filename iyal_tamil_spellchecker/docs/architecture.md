@@ -19,11 +19,11 @@ The system is designed as a **Priority-Based Hybrid Validation Pipeline** that b
        |
        +--- 0. INSTRUMENTATION (Request Timers & Latency Tracking)
        |
-       +--- 1. CUSTOM OVERRIDES (rightwordlist.txt, wrongwordlist.txt, replacements.txt)
+        +--- 1. CUSTOM OVERRIDES (replacements.txt, rightwordlist.txt, wrongwordlist.txt)
        |
        +--- 2. L1 CACHE (Bloom Filter: Instant Dictionary Check)
        |
-       +--- 3. L1.5 MORPHOLOGY (tamil_grammar_morphology.py: Sandhi, Suffix-Stripping, Split Word Merging)
+        +--- 3. L1.5 MORPHOLOGY (tamil_grammar_morphology.py: Sandhi, Suffix-Stripping, Doubled-Consonant support)
        |
        +--- 4. L2 CONTEXT (Bigram DB: Ranking & Grammar Shadow Match)
        |
@@ -88,8 +88,8 @@ use https://www.eraser.io to generate a beautiful diagram
 ### 2. The Custom Layer (Priority 1)
 *   **Rightwordlists**: Project-specific names or technical terms.
 *   **Wrongwordlists**: Prevents common fragments or noisy results from the rule-based engine.
-*   **Replacements**: Enforces formal Tamil vocabulary (e.g., `Bus` -> `பேருந்து`).
-*   *Note*: Checked **before** the dictionary to allow users to override standard dictionary terms.
+*   **Replacements**: Enforces formal Tamil vocabulary (e.g., `Bus` -> `பேருந்து`) or intentional colloquial splits (e.g., `தொடங்கும்போது` -> `தொடங்கும் போது`).
+*   *Note*: Checked **before** the whitelist and dictionary to allow users to override standard rules with intentional variations.
 
 ## 🚀 Scalability: Handling Large Content
 
@@ -107,6 +107,7 @@ To process huge documents (e.g., 50+ pages) without crashing the server or freez
 
 ### 4. The Morphological Layer (Vaani)
 *   **Logic**: Uses a rule-based engine to break down words into root + suffix (Sandhi analysis).
+*   **Doubled-Consonant Support**: Advanced support for doubled markers (`-ட்டை`, `-த்தை`, `-ப்பை`, `-க்கை`, `-ச்சை`) across all cases, ensuring loan words and specific noun classes are correctly resolved.
 *   **Features**: Validates complex derivations that aren't in standard lists and generates suggestions that respect Tamil joining rules.
 
 ### 5. The Fuzzy Layer (BK-Tree)
@@ -117,11 +118,15 @@ To process huge documents (e.g., 50+ pages) without crashing the server or freez
 
 ## 📡 External Integrations
 *   **LanguageTool**: A sidecar Java service used for concurrent grammar checking (e.g., subject-verb agreement).
+*   **GitHub Version Check**: A background synchronization task that fetches `version.txt` from the main repository. It uses a 1-hour cache to avoid redundant network traffic and provides real-time update notifications in the UI.
 
 ## 🗄️ Data Storage
 *   `user_config/`: Plain-text files for user overrides (`rightwordlist.txt`, `wrongwordlist.txt`, `replacements.txt`).
+*   `messages.txt`: Content for the dynamic UI announcements box.
+*   `version.txt`: Application version string.
 *   `data/DB.json`: The rule-set for the Vaani engine.
 *   `tamil_bloom.pkl` / `bk_tree.pkl`: Pre-indexed dictionary and fuzzy-search trees.
+
 
 ## 🛡️ Security Considerations & Hardening
 

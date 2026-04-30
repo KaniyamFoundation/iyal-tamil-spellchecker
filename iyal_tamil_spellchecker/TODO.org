@@ -54,7 +54,8 @@ CLOSED: [2026-04-28 Tue 14:19]
   - Track Top 100k three-word patterns to catch errors split by adverbs (அவன் நேற்று வந்தான்).
 * TODO Dockerize Iyal engine and Java LanguageTool server using docker-compose
 
-* TODO Implement UI tooltips to explain specific error types (Sandhi vs. Colloquial)
+* DONE Implement UI tooltips to explain specific error types (Sandhi vs. Colloquial)
+CLOSED: [2026-04-29 Wed 19:41]
 * DONE Add API Rate Limiting (Flask-Limiter) for public-facing deployments
 CLOSED: [2026-04-28 Tue 13:38]
 * TODO Build a "Modern Python" migration script to add type hinting throughout the engine
@@ -65,4 +66,5 @@ CLOSED: [2026-04-28 Tue 13:38]
   - [ ] Integrate Asynchronous Job Queues (Celery/RQ) to defer synchronous evaluation bounds for massive payloads
   - [ ] Shift in-memory evaluation states into centralized distributed cache instances (Redis)
   - [ ] Partition heavy multiline sequences directly via native Python ProcessPoolExecutor maps
-- TODO Ctrl Z for undo - if the user changes and wants to go back to the previous state
+- DONE Ctrl Z for undo - if the user changes and wants to go back to the previous state 
+CLOSED: [2026-04-29 Wed 20:22]

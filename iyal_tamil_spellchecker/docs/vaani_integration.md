@@ -44,7 +44,9 @@ The spellchecker includes highly sophisticated logic specifically built to resol
 3. **Dangling Sandhi Protection**: Autonomously parses and accommodates terminal linker consonants (`க், ச், த், ப்`). For example, `தானாகவேகோடிட்டுக்` will still cleanly split, securely holding the syntax marker.
 4. **Deep Udampadumey Sandhi De-concatenation**: Validates mathematically flawless Vowel + Bridge + Vowel structures (`செய்யவென்றே`). By structurally reversing the terminal suffix string (`வென்றே` -> `என்றே`), it successfully verifies noun/verb pairs, protecting natively combined grammar compounds without forcing unnecessary splits.
 5. **Pure-Split Preemption Bypass**: Prioritizes valid unspaced text blocks over typo-level combinatorial guessing.
-6. **Anti-Offensive Vulgarity Firewall**: Uses an isolated, computationally cheap `O(1)` validation set (`vulgar_splits.txt`) deeply embedded into the recursive splitter to instantly terminate mathematical tree branches that generate explicit or wildly inappropriate vocabulary fragments (`பேண்ட`), guaranteeing clean UX.
+6. **Advanced Doubled-Consonant Morphology**: A dedicated rule-layer (`tamil_grammar_morphology.py`) that handles doubled markers (`-ட்டை`, `-த்தை`, `-ப்பை`, `-க்கை`, `-ச்சை`) for all cases. This ensures that even for newly added roots in the whitelist, the engine can correctly resolve their inflected forms across 20+ derivation patterns.
+7. **Anti-Offensive Vulgarity Firewall**: Uses an isolated, computationally cheap `O(1)` validation set (`vulgar_splits.txt`) deeply embedded into the recursive splitter to instantly terminate mathematical tree branches that generate explicit or wildly inappropriate vocabulary fragments (`பேண்ட`), guaranteeing clean UX.
+
 
 ### Suggestions Fallback
 - **Rule-Based Primary**: Suggestions are first sought from the Vaani engine, which understands word origins and suffixes.

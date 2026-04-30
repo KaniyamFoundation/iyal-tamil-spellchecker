@@ -73,3 +73,32 @@ def test_deep_fuzzy_correction(client):
     assert data["results"][0]["correct"] is False
     # Catching 'விட்டுக்கொடுக்க'
     assert any("விட்டுக்கொடுக்க" in s for s in data["results"][0]["suggestions"])
+
+def test_todangumpothu_replacement(client):
+    """Verify manual space override replacements."""
+    import app
+    app.res = load_resources()
+    response = client.post('/spellcheck', json={"text": "தொடங்கும்போது"})
+    data = json.loads(response.data)
+
+    assert data["results"][0]["correct"] is False
+
+    assert "தொடங்கும் போது" in data["results"][0]["suggestions"]
+
+def test_ennamanathu_correct(client):
+    """Verify that 'எண்ணமானது' is correctly recognized."""
+    import app
+    app.res = load_resources()
+    response = client.post('/v1/spellcheck', json={"text": "எண்ணமானது"})
+    data = json.loads(response.data)
+    assert data["results"][0]["correct"] is True
+
+def test_eastwoodtai_correct(client):
+    """Verify that 'ஈஸ்ட்வுட்டை' is correctly recognized via morphology."""
+    import app
+    app.res = load_resources()
+    # Ensure ஈஸ்ட்வுட் is whitelisted for the test if it's not in the main DB
+    # (It is in my rightwordlist.txt now)
+    response = client.post('/v1/spellcheck', json={"text": "ஈஸ்ட்வுட்டை"})
+    data = json.loads(response.data)
+    assert data["results"][0]["correct"] is True

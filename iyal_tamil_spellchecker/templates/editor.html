@@ -71,7 +71,7 @@
       background: var(--card-bg);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      padding: 16px 40px;
+      padding: 16px 20px;
       display: flex;
       align-items: center;
       gap: 16px;
@@ -232,15 +232,16 @@
 
     .layout-wrapper {
       display: grid;
-      grid-template-columns: 1fr minmax(0, 960px) 1fr;
-      gap: 40px;
+      grid-template-columns: 320px 1fr 320px;
+      gap: 24px;
       align-items: start;
-      margin: 40px auto;
-      max-width: 1600px;
+      margin: 30px auto;
+      max-width: 98%;
       width: 100%;
       box-sizing: border-box;
-      padding: 0 40px;
+      padding: 0 20px;
     }
+
 
     .main-content {
       grid-column: 2;
@@ -248,7 +249,39 @@
       flex-direction: column;
     }
 
+    .info-box {
+      grid-column: 1;
+      width: 320px;
+      padding: 16px 20px;
+      background: var(--card-bg);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      box-sizing: border-box;
+      position: sticky;
+      top: 100px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .info-box h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      font-size: 16px;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .info-box p {
+      margin: 8px 0;
+      white-space: pre-wrap;
+    }
+
     #ignoreManager {
+
       grid-column: 3;
       width: 320px;
       padding: 16px 20px;
@@ -349,7 +382,37 @@
       color: #ef4444;
     }
 
+    @keyframes flash-red {
+      0% { background-color: rgba(239, 68, 68, 0.1); }
+      50% { background-color: rgba(239, 68, 68, 0.6); }
+      100% { background-color: rgba(239, 68, 68, 0.1); }
+    }
+
+    .flashing-red {
+      animation: flash-red 1s infinite;
+      padding: 6px 14px;
+      border-radius: 8px;
+      color: #ffffff !important;
+      font-weight: bold;
+    }
+
+    @keyframes flash-blue {
+      0% { background-color: rgba(59, 130, 246, 0.1); }
+      50% { background-color: rgba(59, 130, 246, 0.6); }
+      100% { background-color: rgba(59, 130, 246, 0.1); }
+    }
+
+    .flashing-blue {
+      animation: flash-blue 1s infinite;
+      padding: 6px 14px;
+      border-radius: 8px;
+      color: #ffffff !important;
+      font-weight: bold;
+    }
+
     #status {
+
+
       display: flex;
       align-items: center;
       gap: 8px;
@@ -408,7 +471,20 @@
         gap: 16px;
       }
 
+      .info-box {
+        grid-column: auto;
+        position: static;
+        width: 100%;
+        box-sizing: border-box;
+        order: 3;
+      }
+
+      .main-content {
+        order: 1;
+      }
+
       .toolbar {
+
         flex-wrap: wrap;
         justify-content: center;
       }
@@ -430,6 +506,7 @@
         width: 100%;
         position: static;
         box-sizing: border-box;
+        order: 2;
       }
 
       #status {
@@ -461,7 +538,28 @@
   </div>
 
   <div class="layout-wrapper">
-    <div class="left-spacer"></div>
+    <div class="info-box" id="infoBox">
+      <h3>📢 அறிவிப்புகள் (Info)</h3>
+      <div id="infoContent">
+        {% if update_available %}
+          <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid var(--primary); padding: 12px; border-radius: 8px; margin-bottom: 16px; color: var(--text);">
+            <b style="color: var(--primary); display: block; margin-bottom: 4px;">✨ புதிய பதிப்பு கிடைக்கிறது!</b>
+            <span style="font-size: 13px;">பதிப்பு: <b>{{ remote_version }}</b> (தற்போது: {{ version }})</span>
+            <a href="https://github.com/KaniyamFoundation/iyal-tamil-spellchecker" target="_blank" 
+               style="display: block; margin-top: 8px; font-size: 13px; color: #38bdf8; text-decoration: underline; font-weight: 500;">
+               பதிவிறக்கம் செய்க (Download)
+            </a>
+          </div>
+        {% endif %}
+        {% if messages %}
+
+          <p>{{ messages }}</p>
+        {% else %}
+          <p style="color: var(--text-muted);">புதிய தகவல்கள் ஏதும் இல்லை.</p>
+        {% endif %}
+      </div>
+    </div>
+
     <div class="main-content">
       <div class="toolbar">
         <button onclick="copyRawText()">📋 நகலெடு (Copy)</button>
@@ -533,7 +631,9 @@
         <p style="font-size: 14px; color: #94a3b8;"><b>தொடர்புக்கு -</b> த. சீனிவாசன் <a
             href="mailto:tshrinivasan@gmail.com"
             style="color: #38bdf8; text-decoration: none;">tshrinivasan@gmail.com</a></p>
+        <p style="font-size: 12px; color: #64748b; margin-top: 8px;">பதிப்பு (Version): {{ version }}</p>
       </div>
+
     </div>
   </footer>
 
@@ -583,7 +683,9 @@
     }
 
     function clearEditor() {
+      saveState();
       document.getElementById('editor').innerHTML = "<p><br></p>";
+
       document.getElementById('editor').focus();
       walkAndSpellcheck();
     }
@@ -664,7 +766,31 @@
       }
     }
 
+    // --- Undo/Redo State Manager ---
+    const undoStack = [];
+    const redoStack = [];
+    const maxStackSize = 3; // Allowing 2 explicit states + current state
+
+
+    function saveState() {
+      const editor = document.getElementById('editor');
+      if (!editor) return;
+      const state = editor.innerHTML;
+      if (undoStack.length === 0 || undoStack[undoStack.length - 1] !== state) {
+        undoStack.push(state);
+        if (undoStack.length > maxStackSize) {
+          undoStack.shift();
+        }
+        redoStack.length = 0; 
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      saveState();
+    });
+
     // --- Update Metrics ---
+
     function fetchMetrics() {
       fetch("/metrics").then(res => res.json()).then(metrics => {
         document.getElementById("totalWords").textContent = metrics.total_words;
@@ -704,7 +830,9 @@
       const editor = document.getElementById('editor');
 
       const topStatus = document.getElementById('topStatus');
+      topStatus.classList.add('flashing-red');
       topStatus.style.opacity = "1";
+
       topStatus.innerHTML = `<div class='spinner'></div> ஆவணத்தை பகுப்பாய்வு செய்கிறது... (Analyzing)`;
 
       let queuedAny = false;
@@ -738,6 +866,10 @@
         const status = document.getElementById('status');
         status.innerHTML = "✓ சரிபார்க்கப்பட்டது (All Checks Completed)";
         topStatus.innerHTML = "✓ சரிபார்க்கப்பட்டது (Done)";
+        topStatus.classList.remove('flashing-red');
+        topStatus.classList.remove('flashing-blue');
+
+
       }
     };
 
@@ -804,6 +936,10 @@
         }
         status.innerHTML = "✓ சரிபார்க்கப்பட்டது (All Checks Completed)";
         topStatus.innerHTML = "✓ சரிபார்க்கப்பட்டது (Done)";
+        topStatus.classList.remove('flashing-red');
+        topStatus.classList.remove('flashing-blue');
+
+
         fetchMetrics();
         return;
       }
@@ -869,9 +1005,12 @@
       const editor = document.getElementById('editor');
       const caret = saveCaretPosition(editor);
 
-      block.querySelectorAll('.misspelled, .grammar-error').forEach(span => {
-        span.outerHTML = span.textContent;
-      });
+      if (block.nodeType === 1) {
+        block.querySelectorAll('.misspelled, .grammar-error').forEach(span => {
+          span.outerHTML = span.textContent;
+        });
+      }
+
 
       const textNodes = [];
       function getTextNodes(node, arr) {
@@ -911,8 +1050,9 @@
             const word = data.word;
             let index = text.indexOf(word);
             while (index !== -1) {
-              const before = index === 0 || /[\s.,!?;:"'()[\]\n]/.test(text[index - 1]);
-              const after = (index + word.length === text.length) || /[\s.,!?;:"'()[\]\n]/.test(text[index + word.length]);
+              const before = index === 0 || /[^\u0B80-\u0BFF]/.test(text[index - 1]);
+              const after = (index + word.length === text.length) || /[^\u0B80-\u0BFF]/.test(text[index + word.length]);
+
               if (before && after) {
                 matches.push({ start: index, end: index + word.length, data: data });
               }
@@ -1045,10 +1185,52 @@
       insertNextBatch();
     });
 
+    document.getElementById('editor').addEventListener('keydown', (e) => {
+      const isUndo = (e.ctrlKey || e.metaKey) && (e.key === 'z' || e.code === 'KeyZ') && !e.shiftKey;
+      const isRedo = (e.ctrlKey || e.metaKey) && ((e.key === 'y' || e.code === 'KeyY') || ((e.key === 'z' || e.code === 'KeyZ') && e.shiftKey));
+
+      if (isUndo) {
+        e.preventDefault();
+        if (undoStack.length > 1) {
+          redoStack.push(undoStack.pop()); 
+          const prevState = undoStack[undoStack.length - 1];
+          const editor = document.getElementById('editor');
+          
+          const caretOffset = saveCaretPosition(editor);
+          editor.innerHTML = prevState;
+          restoreCaretPosition(editor, caretOffset);
+          
+          walkAndSpellcheck();
+        }
+      } else if (isRedo) {
+        e.preventDefault();
+        if (redoStack.length > 0) {
+          const nextState = redoStack.pop();
+          undoStack.push(nextState);
+          const editor = document.getElementById('editor');
+          
+          const caretOffset = saveCaretPosition(editor);
+          editor.innerHTML = nextState;
+          restoreCaretPosition(editor, caretOffset);
+          
+          walkAndSpellcheck();
+        }
+      } else {
+        if (e.key === ' ' || e.key === 'Enter' || e.key === 'Tab' || e.key === 'Backspace' || e.key === 'Delete') {
+          saveState();
+        }
+      }
+    });
+
     document.getElementById('editor').addEventListener('input', () => {
+
       const topStatus = document.getElementById('topStatus');
+      topStatus.classList.remove('flashing-red');
+      topStatus.classList.add('flashing-blue');
+
       topStatus.style.opacity = "1";
       topStatus.innerHTML = `<div class='spinner'></div> தட்டச்சு செய்கிறீர்கள்... (Typing...)`;
+
 
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(() => { walkAndSpellcheck(); }, 1200);
@@ -1107,7 +1289,9 @@
             const li = document.createElement("li");
             li.textContent = suggestion;
             li.onclick = () => {
+              saveState();
               target.outerHTML = suggestion;
+
               fetch("/log_correction", {
                 method: "POST",
                 headers: { 'Content-Type': 'application/json' },

@@ -2,12 +2,20 @@
 
 All notable changes to the Iyal Tamil Spellchecker project will be documented in this file.
 
-## [0.0.4] - 2026-04-29
+## [0.0.5] - 2026-04-30
 
 ### Added
-- **Morphology Isolation Layer (`tamil_grammar_morphology.py`)**: Decoupled high-level grammar boundaries, trailing sandhi mappings, and coordinate particles completely out of the web framework controller for distinct testing.
-- **Suffix Case Stripping**: Implemented automated reverse-sandhi bounds allowing noun derivation parameters (`-உம்`, `-ஐ`, `-க்கு`, `-இல்`, `-கள்`) to pass flawlessly referencing simple roots.
-- **Split-Phrase Recombination**: Configured look-behind tracking automatically suggesting fused corrections for broken whitespace words (e.g. `வெளி யிட்டுள்ளது` -> `வெளியிட்டுள்ளது`).
+- **Info Box Support**: Added a dynamic info box on the left side of the UI to display announcements, donation links, or system messages, loaded from `messages.txt`.
+- **Doubled-Consonant Morphology Support**: Advanced support for markers like `-ட்டை`, `-த்தை`, `-ப்பை`, `-க்கை`, `-ச்சை` across all grammatical cases, allowing loan words and specific noun classes to resolve correctly to their roots.
+- **Enhanced Sandhi Processing**: Improved the core engine to recursively check for derived roots even after stripping trailing sandhi consonants.
+- **Improved UI Feedback**: Implemented flashing status indicators ("சரிபார்க்கிறது", "தட்டச்சு செய்கிறீர்கள்") to provide clear visual feedback during active spellchecking and typing.
+- **Regression Test Suite**: Added a dedicated `tests/test_regression_cases.py` and expanded `test_morphology.py` to ensure long-term stability for complex derivation patterns.
+
+### Changed
+- **Override Priority Refinement**: Optimized the processing pipeline to check `replacements.txt` before the `whitelist`, allowing for intentional colloquial overrides (e.g., `தொடங்கும்போது` -> `தொடங்கும் போது`) even for words present in the dictionary.
+
+## [0.0.4] - 2026-04-29
+
 
 ## [0.0.3] - 2026-04-28
 - **RESTful API Versioning (v1)**: Implemented side-by-side mapping for all core endpoints (e.g., `/v1/spellcheck`), ensuring backward compatibility for older clients while allowing for breaking changes in the future.

@@ -222,7 +222,28 @@ def log_event(subfolder, content):
     with open(filepath, "a", encoding="utf-8") as f:
         f.write(f"{content}\n")
 
+# Version check caching
+VERSION_CACHE = {
+    "remote_version": None,
+    "last_check": 0
+}
+VERSION_CHECK_INTERVAL = 3600  # Check once per hour
+REMOTE_VERSION_URL = "https://raw.githubusercontent.com/KaniyamFoundation/iyal-tamil-spellchecker/main/iyal_tamil_spellchecker/version.txt"
+
+def get_cached_remote_version():
+    now = time.time()
+    if now - VERSION_CACHE["last_check"] > VERSION_CHECK_INTERVAL:
+        try:
+            with urllib.request.urlopen(REMOTE_VERSION_URL, timeout=3) as response:
+                VERSION_CACHE["remote_version"] = response.read().decode('utf-8').strip()
+                VERSION_CACHE["last_check"] = now
+        except Exception as e:
+            # We don't want to crash on network error, just log and wait a bit
+            VERSION_CACHE["last_check"] = now - (VERSION_CHECK_INTERVAL - 300) # Retry in 5 mins
+    return VERSION_CACHE["remote_version"]
+
 # ---------------------- Routes ----------------------
+
 
 
 @app.route("/")
@@ -233,7 +254,28 @@ def index():
             version = f.read().strip()
     except:
         pass
-    return render_template("editor.html", version=version)
+
+    messages = ""
+    try:
+        if os.path.exists("messages.txt"):
+            with open("messages.txt", "r", encoding="utf-8") as f:
+                messages = f.read()
+    except:
+        pass
+
+    remote_version = get_cached_remote_version()
+    update_available = False
+    if remote_version:
+        try:
+            l = [int(x) for x in version.split('.')]
+            r = [int(x) for x in remote_version.split('.')]
+            if r > l:
+                update_available = True
+        except:
+            pass
+
+    return render_template("editor.html", version=version, messages=messages, update_available=update_available, remote_version=remote_version)
+
 
 # ---------------------- Grammar Rules ----------------------
 
@@ -369,12 +411,13 @@ def process_single_text(text):
             if word in res.blacklist:
                 is_correct = False
                 error_type = "blacklist"
-            elif word in res.whitelist:
-                is_correct = True
             elif word in res.replacements:
                 is_correct = False
                 suggestions = res.replacements[word]
                 error_type = "colloquial"
+            elif word in res.whitelist:
+                is_correct = True
+
             else:
                 # 1. Check Bloom filter for speed
                 if word in res.bloom:
@@ -386,6 +429,14 @@ def process_single_text(text):
                     if base_sandhi:
                         if base_sandhi in res.bloom or base_sandhi in res.whitelist or (res.vaani and res.vaani.checkword(base_sandhi, 0)):
                             is_correct = True
+                        else:
+                            # Check if the sandhi-stripped word is a derived variant
+                            possible_roots = tamil_grammar_morphology.get_derived_viku_variants(base_sandhi)
+                            for r_word in possible_roots:
+                                if r_word in res.bloom or r_word in res.whitelist or (res.vaani and res.vaani.checkword(r_word, 0)):
+                                    is_correct = True
+                                    break
+
                 
                 # 2.5. Check derived words of valid roots (Noun Case Endings / Coordinating Suffixes)
                 if not is_correct:
@@ -436,10 +487,11 @@ def process_single_text(text):
                 non_splits = [s for s in unique_sugs if " " not in s]
                 splits = [s for s in unique_sugs if " " in s]
                 
-                if non_splits:
+                if non_splits and error_type != "colloquial":
                     suggestions = non_splits[:5]
                 else:
-                    suggestions = splits[:5]
+                    suggestions = (splits + non_splits)[:5]
+
                     error_type = "sandhi"
 
             
@@ -561,6 +613,8 @@ def health():
     return "OK", 200
 
 if __name__ == "__main__":
-    app.run(host='localhost', port=5000,debug=True)
+    #app.run(host='localhost', port=5001,debug=True)
+    # Resource reset triggered!
 
+    app.run(host='localhost', port=5000,debug=True)
     #app.run(debug=True)
