@@ -248,7 +248,7 @@ def get_cached_remote_version():
 
 @app.route("/")
 def index():
-    version = "0.0.5"
+    version = "0.0.6"
     try:
         with open("version.txt", "r", encoding="utf-8") as f:
             version = f.read().strip()

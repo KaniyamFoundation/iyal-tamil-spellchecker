@@ -1,5 +1,13 @@
 # Iyal Tamil Spellchecker - Changelog
 
+### 0.0.6 (2026-05-20)
+
+* Added 5147 new highly used words
+* Added few right,wrong,replacement words
+
+
+
+
 ### 0.0.5 (2026-04-29)
 *   **Morphological Precision**:
     *   Added strict validation for short roots (<= 2 chars) to prevent "syllable fragments" from passing spellcheck.
